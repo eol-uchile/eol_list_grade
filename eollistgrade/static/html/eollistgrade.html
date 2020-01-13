@@ -1,0 +1,51 @@
+<div class="eollistgrade_block">
+   
+    <div aria-hidden="true" class="wrap-instructor-info">
+    <a class="instructor-info-action" id="grade-submissions-button"
+        href="#grade-1"> "Estudiantes" </a>
+    </div>
+    {% if is_course_staff %}
+    <section aria-hidden="true" class="modal staff-modal" id="grade-1" style="height: auto" tabindex="-1">
+        <div class="inner-wrapper" style="color: black; overflow: auto;">
+            <header><h2><span class="display_name">Estudiantes</span> -"Staff Graded Assignment"</h2></header>
+
+            <br/>
+            <label style="color: royalblue;"></label>  
+            <div>
+                <label for="ptjemax">Puntaje Maximo</label>
+                <input name="ptjemax" class="ptjemax" type="text" style="width: 60px;" placeholder="100" value="{{ xblock.puntajemax }}" >
+            </div>  
+            <br/>       
+            <div id="grade-info" style="display: block;">
+                <table style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <td>Estudiante</td>
+                            <td style="width: 110px;">Puntaje</td>
+                            <td>Comentarios</td>
+                            <td>Acciones</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for alumno in lista_alumnos %}
+                    <tr id={{alumno.id}}>
+                        <td hidden>{{alumno.id}}</td>
+                        <td>{{alumno.username}}</td>
+                        <td>
+                            <input name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">&nbsp;&frasl;&nbsp;<label name="max">{{ xblock.puntajemax }}</label>
+                        </td>
+                        <td>
+                            <input name='comentario' type="text">
+                        </td>
+                        <td>
+                            <input type="button" value="Enviar" disabled />                            
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+</div>

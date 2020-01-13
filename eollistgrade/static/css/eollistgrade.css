@@ -1,0 +1,105 @@
+
+.eollistgrade_block .personaje{
+    width: 130px;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-position: center; 
+}
+
+.eollistgrade_block .Izquierda ,
+.eollistgrade_block .Derecha{
+    position: relative;
+    width:800px;
+    color:#000;
+    min-height: 115px;
+    padding:20px 0;
+    margin: auto;
+    box-sizing: border-box; 
+    overflow: hidden;
+}
+
+.eollistgrade_block .Izquierda .personaje{
+    left: 10px;
+    position: absolute;
+    top:0;
+    z-index:5;
+}
+
+.eollistgrade_block .Derecha .personaje{
+    right: 10px;
+    position: absolute;
+    top:0;
+    z-index:5;
+}
+
+.eollistgrade_block .dialogo p {
+    margin-bottom: 0 !important;
+}
+
+.eollistgrade_block .Izquierda .dialogo{
+    left: 180px; 
+    display:table; 
+    max-width: 505px;
+}
+
+.eollistgrade_block .Derecha .dialogo{
+    right: 180px;
+    float: right;
+    text-align: right; 
+    display:table;
+    max-width: 505px;
+}
+
+.eollistgrade_block .Izquierda .dialogo,
+.eollistgrade_block .Derecha .dialogo
+{
+    position: relative;
+    min-width: 200px;
+    box-sizing: border-box;
+    padding: 30px;
+    border-radius: 15px;
+    min-height: 78px;
+	display: table-cell; vertical-align: middle;
+	 width: -webkit-max-content;
+	 width: -moz-max-content;
+	 width: max-content; 
+}
+.eollistgrade_block .Izquierda .cola{
+    left: 133px;
+    background-image: url(https://static.cmm.uchile.cl/global2/cola_izq.png);
+}
+
+.eollistgrade_block .Derecha .cola{
+    right: 133px;
+    background-image: url(https://static.cmm.uchile.cl/global2/cola_der.png);
+}
+
+.eollistgrade_block .Izquierda .cola,
+.eollistgrade_block .Derecha .cola{
+    position: absolute;
+    box-sizing: border-box;
+    top:35px;
+    width: 47px;
+    height: 28px;
+    z-index: 4;
+}
+
+/* CSS for Media theme */
+
+.eollistgrade_block.Media .Izquierda .dialogo,
+.eollistgrade_block.Media .Derecha .dialogo
+{
+    border-radius: 30px;
+}
+
+.eollistgrade_block.Media .Izquierda .cola,
+.eollistgrade_block.Media .Derecha .cola{
+    top:47px;
+}
+table {
+    border-collapse: collapse;
+  }
+  
+table, th, td {
+    border: 1px solid black;
+}
