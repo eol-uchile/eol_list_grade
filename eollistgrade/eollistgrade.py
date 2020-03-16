@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from submissions import api as submissions_api
 from student.models import user_by_anonymous_id
 from courseware.models import StudentModule
+import json
 
 # Make '_' a no-op so we can scrape strings
 _ = lambda text: text
@@ -144,7 +145,25 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         if score:
             return score['points_earned']
 
-    def get_or_create_student_module(self, user):
+    def get_com(self, student_id, course_key, block_key):
+        """
+        Return student's comments
+        """
+        
+        try:
+            student_module = StudentModule.objects.get(
+                student_id=student_id,
+                course_id=self.course_id,
+                module_state_key=self.location
+                )
+        except StudentModule.DoesNotExist:
+            student_module = None
+
+        if student_module:
+            return json.loads(student_module.state)
+        return {}
+
+    def get_or_create_student_module(self, student_id):
         """
         Gets or creates a StudentModule for the given user for this block
         Returns:
@@ -154,19 +173,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         student_module, created = StudentModule.objects.get_or_create(
             course_id=self.course_id,
             module_state_key=self.location,
-            student=user,
+            student_id=student_id,
             defaults={
                 'state': '{}',
                 'module_type': self.category,
             }
-        )
-        if created:
-            log.info(
-                "Created student module %s [course: %s] [student: %s]",
-                student_module.module_state_key,
-                student_module.course_id,
-                student_module.student.username
-            )
+        )       
+            
         return student_module
 
     def student_view(self, context=None):
@@ -210,10 +223,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         if self.show_staff_grading_interface():
             for a in enrolled_students:
                 p = self.get_score(a['id']) if self.get_score(a['id']) else ''
-                lista_alumnos.append({'id': a['id'], 'username': a['username'], 'pun': p })
+                state = self.get_com(a['id'], course_key, self.block_id)
+                com=''
+                if 'comment' in state:
+                    com = state['comment']                
+                lista_alumnos.append({'id': a['id'], 'username': a['username'], 'pun': p, 'com': com })
 
-            context['lista_alumnos'] = lista_alumnos
-            context['is_course_staff'] = False
+            context['lista_alumnos'] = lista_alumnos           
             context['category'] = type(self).__name__
         
             context['is_course_staff'] = True
@@ -224,10 +240,12 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
         user = user_by_anonymous_id(data.get('id'))
-        student_module = self.get_or_create_student_module(user)
+        student_module = self.get_or_create_student_module(data.get('id'))
         state = json.loads(student_module.state)
         score = int(data.get('puntaje'))
         state['comment'] = data.get('comentario')
+        state['student_score'] = score
+        state['score_max'] = data.get('puntajemax')
         student_module.state = json.dumps(state)
         student_module.save()
 
@@ -246,6 +264,33 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
         return {'result': 'success', 'id': data.get('id')}
 
+    @XBlock.json_handler
+    def savestudentanswersall(self, data, suffix=''):        
+        for fila in data.get('data'):           
+            user = user_by_anonymous_id(fila[0])
+            student_module = self.get_or_create_student_module(fila[0])
+            state = json.loads(student_module.state)
+            score = int(fila[1])
+            state['comment'] = fila[2]
+            state['student_score'] = score
+            state['score_max'] = data.get('puntajemax')
+            student_module.state = json.dumps(state)
+            student_module.save()
+
+            student_item = {
+                'student_id': fila[0],
+                'course_id': self.block_course_id,            
+                'item_id': self.block_id,
+                'item_type': 'problem'
+            }
+            submission = self.get_submission(fila[0])
+            if submission:
+                submissions_api.set_score(submission['uuid'], score, data.get('puntajemax'))
+            else:
+                submission = submissions_api.create_submission(student_item, 'any answer')
+                submissions_api.set_score(submission['uuid'], score, int(data.get('puntajemax')))
+
+        return {'result': 'success', 'id': '00'}
 
 
     def render_template(self, template_path, context):

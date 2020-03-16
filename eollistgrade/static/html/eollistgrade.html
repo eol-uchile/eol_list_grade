@@ -1,11 +1,11 @@
 <div class="eollistgrade_block">
-   
-    <div aria-hidden="true" class="wrap-instructor-info">
-    <a class="instructor-info-action" id="grade-submissions-button"
-        href="#grade-1"> "Estudiantes" </a>
+   {% if is_course_staff %}   
+    <div aria-hidden="true" class="wrap-instructor-info" style="display: block;">
+        <a class="instructor-info-action" id="grade-submissions-button"
+            href="#grade-1"> "Estudiantes" </a>
     </div>
-    {% if is_course_staff %}
-    <section aria-hidden="true" class="modal staff-modal" id="grade-1" style="height: auto" tabindex="-1">
+    
+    <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1" style="height: auto" tabindex="-1">
         <div class="inner-wrapper" style="color: black; overflow: auto;">
             <header><h2><span class="display_name">Estudiantes</span> -"Staff Graded Assignment"</h2></header>
 
@@ -14,6 +14,7 @@
             <div>
                 <label for="ptjemax">Puntaje Maximo</label>
                 <input name="ptjemax" class="ptjemax" type="text" style="width: 60px;" placeholder="100" value="{{ xblock.puntajemax }}" >
+                <input name="sendall" class="sendall" type="button" style="width: 100px;" value="Todos" >
             </div>  
             <br/>       
             <div id="grade-info" style="display: block;">
@@ -26,7 +27,7 @@
                             <td>Acciones</td>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tabla-alumnos">
                     {% for alumno in lista_alumnos %}
                     <tr id={{alumno.id}}>
                         <td hidden>{{alumno.id}}</td>
@@ -35,7 +36,7 @@
                             <input name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">&nbsp;&frasl;&nbsp;<label name="max">{{ xblock.puntajemax }}</label>
                         </td>
                         <td>
-                            <input name='comentario' type="text">
+                            <input name='comentario' class="comentario" type="text" value={{alumno.com}}>
                         </td>
                         <td>
                             <input type="button" value="Enviar" disabled />                            

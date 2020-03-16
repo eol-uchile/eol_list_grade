@@ -12,15 +12,18 @@ function EolListGradeXBlock(runtime, element) {
     var $ = window.jQuery;
     var $element = $(element);
     var handlerUrlSaveStudentAnswers = runtime.handlerUrl(element, 'savestudentanswers');
+    var handlerUrlSaveStudentAnswersAll = runtime.handlerUrl(element, 'savestudentanswersall');
 
     function showAnswers(result){
-        
-        if (result.result == 'success'){
-            var id = result.id
+        var id = result.id
+        if (id != "00" && result.result == 'success'){            
             var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells
             a[2].children[0].value = ""
             a[3].children[0].value = ""
-            $element.find('.eollistgrade_block label')[0].textContent = "Guardado Correctamente"
+            $element.find('.eollistgrade_block label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
+        }
+        if (id == "00" && result.result == 'success'){
+            $element.find('.eollistgrade_block label')[0].textContent = "Guardado Correctamente Todos"
         }
     }
 
@@ -54,6 +57,34 @@ function EolListGradeXBlock(runtime, element) {
         }
     });
 
+    $('input[name=sendall]').live('click', function () {        
+        var tabla = $element.find('#tabla-alumnos')[0].children;
+        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value;
+        var check = true;
+        var data =  new Array();
+        for(i=0;i<tabla.length;i++){          
+            var id = tabla[i].cells[0].textContent            
+            var punt = tabla[i].cells[2].children[0].value
+            var com = tabla[i].cells[3].children[0].value
+            if (parseInt(punt, 10) > parseInt(pmax, 10) || punt == ""){
+                check = false
+                $element.find('.eollistgrade_block label')[0].textContent = "Revise los campos si estan correctos"                
+            }
+            else{
+                var aux =  new Array(id, punt, com);
+                data.push(aux)
+            }            
+        }       
+        if (check){
+            $.ajax({
+                type: "POST",
+                url: handlerUrlSaveStudentAnswersAll,
+                data: JSON.stringify({"data": data, "puntajemax": pmax}),
+                success: showAnswers
+            });
+        }
+    });
+
    $('.decimalx').keyup(function(){
         var val = $(this).val()
         if(isNaN(val)){
@@ -75,6 +106,24 @@ function EolListGradeXBlock(runtime, element) {
         else{
             colum[4].children[0].disabled = true
         }   
+    
+    });
+    $('.comentario').keyup(function(){
+        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
+        if (pmax == ""){
+            pmax= "100"
+        }
+        var fila = $(this).closest('tr')
+        var colum = fila[0].cells
+        var val = colum[2].children[0].value
+        if (parseInt(val, 10) <= parseInt(pmax, 10) ){
+            if (colum[4].children[0].disabled){
+                colum[4].children[0].disabled = false
+            }                       
+        }   
+        else{
+            colum[4].children[0].disabled = true
+        }  
     
     });
     $('.ptjemax').keyup(function(){
