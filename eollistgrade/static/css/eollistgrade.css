@@ -111,5 +111,8 @@ table, th, td {
     opacity: 1 !important;
     z-index: 11000 !important;    
     top: -320px !important;
-    overflow: auto !important;    
+    overflow: auto !important;
+    margin-left: auto !important;     
+    margin-right: auto !important;
+    min-width: 650px !important; 
 }

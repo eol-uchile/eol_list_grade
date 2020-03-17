@@ -19,22 +19,26 @@ from courseware.models import StudentModule
 import json
 
 # Make '_' a no-op so we can scrape strings
-_ = lambda text: text
+
+
+def _(text): return text
+
 
 def reify(meth):
+    """
+    Decorator which caches value so it is only computed once.
+    Keyword arguments:
+    inst
+    """
+    def getter(inst):
         """
-        Decorator which caches value so it is only computed once.
-        Keyword arguments:
-        inst
+        Set value to meth name in dict and returns value.
         """
-        def getter(inst):
-            """
-            Set value to meth name in dict and returns value.
-            """
-            value = meth(inst)
-            inst.__dict__[meth.__name__] = value
-            return value
-        return property(getter)
+        value = meth(inst)
+        inst.__dict__[meth.__name__] = value
+        return value
+    return property(getter)
+
 
 class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
@@ -44,7 +48,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         default="Eol List Grade XBlock",
         scope=Scope.settings,
     )
-    puntajemax = Integer(#float
+    puntajemax = Integer(  # float
         display_name='Puntaje Maximo',
         help='Entero que representa puntaje maximo',
         default=100,
@@ -61,7 +65,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         default={},
         scope=Scope.preferences,
     )
-   
+
     #editable_fields = ('puntajemax', 'puntaje', 'comentario', 'display_name')
 
     def resource_string(self, path):
@@ -104,7 +108,6 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         in_studio_preview = self.scope_ids.user_id is None
         return self.is_course_staff() and not in_studio_preview
 
-
     def get_submission(self, student_id=None):
         """
         Get student's most recent submission.
@@ -116,7 +119,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             # If I understand docs correctly, most recent submission should
             # be first
             return submissions[0]
-    
+
     def get_student_item_dict(self, student_id=None):
         # pylint: disable=no-member
         """
@@ -149,13 +152,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Return student's comments
         """
-        
+
         try:
             student_module = StudentModule.objects.get(
                 student_id=student_id,
                 course_id=self.course_id,
                 module_state_key=self.location
-                )
+            )
         except StudentModule.DoesNotExist:
             student_module = None
 
@@ -178,68 +181,78 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 'state': '{}',
                 'module_type': self.category,
             }
-        )       
-            
+        )
+
         return student_module
 
     def student_view(self, context=None):
-        
         context = self.get_context()
-        template = self.render_template('static/html/eollistgrade.html', context)
+        template = self.render_template(
+            'static/html/eollistgrade.html', context)
         frag = Fragment(template)
         frag.add_css(self.resource_string("static/css/eollistgrade.css"))
-        frag.add_javascript(self.resource_string("static/js/src/eollistgrade.js"))
-        frag.initialize_js('EolListGradeXBlock')
-        return frag
-
-    def studio_view(self, context=None):
-        aux = 'course-v1:mss+MSS001+2019_2'
-        course_key = CourseKey.from_string(aux)
-        #course = get_course_with_access(request.user, 'staff', course_key, depth=None)
-        enrolled_students = User.objects.filter(
-            courseenrollment__course_id=course_key
-            #courseenrollment__is_active=1
-        ).order_by('username').select_related("profile")
-
-        lista_alumnos = enrolled_students
-        context = {'lista_alumnos': lista_alumnos}
-        template = self.render_template('static/html/eollistgrade.html', context)
-        frag = Fragment(template)
-        frag.add_css(self.resource_string("static/css/eollistgrade.css"))
-        frag.add_javascript(self.resource_string("static/js/src/eollistgrade.js"))
+        frag.add_javascript(self.resource_string(
+            "static/js/src/eollistgrade.js"))
         frag.initialize_js('EolListGradeXBlock')
         return frag
 
     def get_context(self):
         aux = self.block_course_id
-        course_key = CourseKey.from_string(aux)        
-        #course = get_course_with_access(request.user, 'staff', course_key, depth=None)
+        course_key = CourseKey.from_string(aux)
         enrolled_students = User.objects.filter(
-            courseenrollment__course_id=course_key
-            #courseenrollment__is_active=1
-        ).order_by('username').values('id', 'username')
+            courseenrollment__course_id=course_key,
+            courseenrollment__is_active=1
+        ).order_by('username').values('id', 'username', 'email')
         context = {'xblock': self}
         lista_alumnos = []
+        calificado = 0
         if self.show_staff_grading_interface():
             for a in enrolled_students:
-                p = self.get_score(a['id']) if self.get_score(a['id']) else ''
+                p = ''
+                if self.get_score(a['id']):
+                    p = self.get_score(a['id'])
+                    calificado = calificado + 1
+
                 state = self.get_com(a['id'], course_key, self.block_id)
-                com=''
+                com = ''
                 if 'comment' in state:
-                    com = state['comment']                
-                lista_alumnos.append({'id': a['id'], 'username': a['username'], 'pun': p, 'com': com })
+                    com = state['comment']
+                lista_alumnos.append({'id': a['id'],
+                                      'username': a['username'],
+                                      'correo': a['email'],
+                                      'pun': p,
+                                      'com': com})
 
-            context['lista_alumnos'] = lista_alumnos           
+            context['lista_alumnos'] = lista_alumnos
+            context['calificado'] = calificado
             context['category'] = type(self).__name__
-        
             context['is_course_staff'] = True
-        
-        return context
+        else:
+            enrolled_student = User.objects.filter(
+                courseenrollment__course_id=course_key,
+                courseenrollment__is_active=1,
+                id=self.scope_ids.user_id
+            ).values('id', 'username', 'email').first()
+            p = '0'
+            if self.get_score(enrolled_student['id']):
+                p = self.get_score(enrolled_student['id'])
 
+            state = self.get_com(
+                enrolled_student['id'],
+                course_key,
+                self.block_id)
+            com = ''
+            if 'comment' in state:
+                com = state['comment']
+
+            context['puntaje'] = p
+            context['comentario'] = com
+            context['usuario'] = enrolled_student
+            context['is_course_staff'] = False
+        return context
 
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
-        user = user_by_anonymous_id(data.get('id'))
         student_module = self.get_or_create_student_module(data.get('id'))
         state = json.loads(student_module.state)
         score = int(data.get('puntaje'))
@@ -251,23 +264,26 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
         student_item = {
             'student_id': data.get('id'),
-            'course_id': self.block_course_id,            
+            'course_id': self.block_course_id,
             'item_id': self.block_id,
             'item_type': 'problem'
         }
         submission = self.get_submission(data.get('id'))
         if submission:
-            submissions_api.set_score(submission['uuid'], score, data.get('puntajemax'))
+            submissions_api.set_score(
+                submission['uuid'], score, data.get('puntajemax'))
         else:
-            submission = submissions_api.create_submission(student_item, 'any answer')
-            submissions_api.set_score(submission['uuid'], score, int(data.get('puntajemax')))
+            submission = submissions_api.create_submission(
+                student_item, 'any answer')
+            submissions_api.set_score(
+                submission['uuid'], score, int(
+                    data.get('puntajemax')))
 
         return {'result': 'success', 'id': data.get('id')}
 
     @XBlock.json_handler
-    def savestudentanswersall(self, data, suffix=''):        
-        for fila in data.get('data'):           
-            user = user_by_anonymous_id(fila[0])
+    def savestudentanswersall(self, data, suffix=''):
+        for fila in data.get('data'):
             student_module = self.get_or_create_student_module(fila[0])
             state = json.loads(student_module.state)
             score = int(fila[1])
@@ -279,25 +295,28 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
             student_item = {
                 'student_id': fila[0],
-                'course_id': self.block_course_id,            
+                'course_id': self.block_course_id,
                 'item_id': self.block_id,
                 'item_type': 'problem'
             }
             submission = self.get_submission(fila[0])
             if submission:
-                submissions_api.set_score(submission['uuid'], score, data.get('puntajemax'))
+                submissions_api.set_score(
+                    submission['uuid'], score, data.get('puntajemax'))
             else:
-                submission = submissions_api.create_submission(student_item, 'any answer')
-                submissions_api.set_score(submission['uuid'], score, int(data.get('puntajemax')))
+                submission = submissions_api.create_submission(
+                    student_item, 'any answer')
+                submissions_api.set_score(
+                    submission['uuid'], score, int(
+                        data.get('puntajemax')))
 
         return {'result': 'success', 'id': '00'}
-
 
     def render_template(self, template_path, context):
         template_str = self.resource_string(template_path)
         template = Template(template_str)
         return template.render(Context(context))
-    
+
         # workbench while developing your XBlock.
     @staticmethod
     def workbench_scenarios():

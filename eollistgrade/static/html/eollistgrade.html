@@ -1,27 +1,30 @@
 <div class="eollistgrade_block">
    {% if is_course_staff %}   
-    <div aria-hidden="true" class="wrap-instructor-info" style="display: block;">
-        <a class="instructor-info-action" id="grade-submissions-button"
-            href="#grade-1"> "Estudiantes" </a>
+    <div class="wrap-instructor-info" style="display: block;">
+        <h2>Estudiantes Calificados</h2></br>
+        <label style="cursor: default;">Estudiantes Calificados: {{calificado}} de {{ lista_alumnos|length }}</label></br>  
+        <a class="button" id="grade-submissions-button"
+            href="#grade-1" style="margin-top: inherit;color: black;"> Calificaciones</a>
     </div>
     
     <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1" style="height: auto" tabindex="-1">
-        <div class="inner-wrapper" style="color: black; overflow: auto;">
-            <header><h2><span class="display_name">Estudiantes</span> -"Staff Graded Assignment"</h2></header>
-
+        <div class="inner-wrapper" style="color: black; overflow: auto;text-align: center;">
+            <header><h2><span class="display_name">Calificaciones Estudiantes</span></h2></header>
             <br/>
-            <label style="color: royalblue;"></label>  
-            <div>
-                <label for="ptjemax">Puntaje Maximo</label>
+            <label style="cursor: default;" id="eollistgrade_label" style="color: royalblue;"></label>
+            <label style="cursor: default;" id="eollistgrade_wrong_label" style="color: red;"></label>            
+            <div class="row">
+                <label style="cursor: default;" for="ptjemax">Puntaje Maximo</label>
                 <input name="ptjemax" class="ptjemax" type="text" style="width: 60px;" placeholder="100" value="{{ xblock.puntajemax }}" >
-                <input name="sendall" class="sendall" type="button" style="width: 100px;" value="Todos" >
+                <input name="sendall" class="sendall" type="button" style="width: 145px;" value="Guardar Todos" >
             </div>  
             <br/>       
             <div id="grade-info" style="display: block;">
-                <table style="text-align: center;">
+                <table style="text-align: center;margin-left:auto;margin-right:auto;">
                     <thead>
                         <tr>
                             <td>Estudiante</td>
+                            <td>Correo</td>
                             <td style="width: 110px;">Puntaje</td>
                             <td>Comentarios</td>
                             <td>Acciones</td>
@@ -32,14 +35,15 @@
                     <tr id={{alumno.id}}>
                         <td hidden>{{alumno.id}}</td>
                         <td>{{alumno.username}}</td>
+                        <td>{{alumno.correo}}</td>
                         <td>
-                            <input name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">&nbsp;&frasl;&nbsp;<label name="max">{{ xblock.puntajemax }}</label>
+                            <input name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">&nbsp;&frasl;&nbsp;<label  style="cursor: default;" name="max">{{ xblock.puntajemax }}</label>
                         </td>
                         <td>
                             <input name='comentario' class="comentario" type="text" value={{alumno.com}}>
                         </td>
                         <td>
-                            <input type="button" value="Enviar" disabled />                            
+                            <input type="button" value="Guardar" disabled />                            
                         </td>
                     </tr>
                     {% endfor %}
@@ -48,5 +52,18 @@
             </div>
         </div>
     </section>
-    {% endif %}
+    {% else %}
+    <div class="wrap-instructor-info" style="display: block;">
+        <h2>Calificación</h2>
+        <label style="cursor: default;">Estudiante: {{ usuario.username }}</label></br>
+        {% if puntaje == '0' %}
+            <label style="cursor: default;"> - Aun no a sido calificado</label>  
+        {% else %}
+            <label style="cursor: default;"> Calidicado con: {{ puntaje }} de {{ xblock.puntajemax }}</label></br>
+        {% endif %}
+        {% if comentario != '' %}
+            <label style="cursor: default;"> Comentarios: {{ comentario }}</label> 
+        {% endif %}
+        </div>
+        {% endif %}
 </div>

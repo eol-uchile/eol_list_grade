@@ -17,13 +17,11 @@ function EolListGradeXBlock(runtime, element) {
     function showAnswers(result){
         var id = result.id
         if (id != "00" && result.result == 'success'){            
-            var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells
-            a[2].children[0].value = ""
-            a[3].children[0].value = ""
-            $element.find('.eollistgrade_block label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
+            var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells            
+            $element.find('#eollistgrade_label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
         }
         if (id == "00" && result.result == 'success'){
-            $element.find('.eollistgrade_block label')[0].textContent = "Guardado Correctamente Todos"
+            $element.find('#eollistgrade_label')[0].textContent = "Guardado Correctamente Todas las Calificaciones"
         }
     }
 
@@ -39,21 +37,24 @@ function EolListGradeXBlock(runtime, element) {
         var fila = $(this).closest('tr')
         var colum = fila[0].cells
         var id_student = colum[0].textContent
-        var puntaje = colum[2].children[0].value
-        var comentario = colum[3].children[0].value
+        var puntaje = colum[3].children[0].value
+        var comentario = colum[4].children[0].value
         var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
         if (pmax == ""){
             pmax= "100"
-        }
-        
-        colum[4].children[0].disabled = true
-        if(puntaje != ""){
+        }        
+        colum[5].children[0].disabled = true
+       
+        if(puntaje != "" && parseInt(puntaje, 10) <= parseInt(pmax, 10)){
             $.ajax({
                 type: "POST",
                 url: handlerUrlSaveStudentAnswers,
                 data: JSON.stringify({"id": id_student, "puntaje": puntaje, "comentario": comentario, "puntajemax": pmax}),
                 success: showAnswers
             });
+        }
+        else{
+            $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"
         }
     });
 
@@ -64,11 +65,11 @@ function EolListGradeXBlock(runtime, element) {
         var data =  new Array();
         for(i=0;i<tabla.length;i++){          
             var id = tabla[i].cells[0].textContent            
-            var punt = tabla[i].cells[2].children[0].value
-            var com = tabla[i].cells[3].children[0].value
+            var punt = tabla[i].cells[3].children[0].value
+            var com = tabla[i].cells[4].children[0].value
             if (parseInt(punt, 10) > parseInt(pmax, 10) || punt == ""){
                 check = false
-                $element.find('.eollistgrade_block label')[0].textContent = "Revise los campos si estan correctos"                
+                $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"                
             }
             else{
                 var aux =  new Array(id, punt, com);
@@ -101,10 +102,10 @@ function EolListGradeXBlock(runtime, element) {
         var fila = $(this).closest('tr')
         var colum = fila[0].cells  
         if (parseInt(val, 10) <= parseInt(pmax, 10) ){
-            colum[4].children[0].disabled = false
+            colum[5].children[0].disabled = false
         }   
         else{
-            colum[4].children[0].disabled = true
+            colum[5].children[0].disabled = true
         }   
     
     });
@@ -115,14 +116,14 @@ function EolListGradeXBlock(runtime, element) {
         }
         var fila = $(this).closest('tr')
         var colum = fila[0].cells
-        var val = colum[2].children[0].value
+        var val = colum[3].children[0].value
         if (parseInt(val, 10) <= parseInt(pmax, 10) ){
-            if (colum[4].children[0].disabled){
-                colum[4].children[0].disabled = false
+            if (colum[5].children[0].disabled){
+                colum[5].children[0].disabled = false
             }                       
         }   
         else{
-            colum[4].children[0].disabled = true
+            colum[5].children[0].disabled = true
         }  
     
     });
@@ -142,14 +143,14 @@ function EolListGradeXBlock(runtime, element) {
         }
         
         for(i=0;i<trs.length;i++){
-            var tds = trs[i].cells[2]
+            var tds = trs[i].cells[3]
             var labelmax = tds.children.max
             labelmax.textContent = val
-            var punt = trs[i].cells[2].children[0].value
+            var punt = trs[i].cells[3].children[0].value
             if(punt == ""){
                 punt=parseInt(val, 10)+1
             }
-            var inp = trs[i].cells[4].children[0]
+            var inp = trs[i].cells[5].children[0]
             
             if (parseInt(punt, 10) <= parseInt(val, 10) ){
                 inp.disabled = false
