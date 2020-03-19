@@ -48,25 +48,15 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         default="Eol List Grade XBlock",
         scope=Scope.settings,
     )
-    puntajemax = Integer(  # float
+    puntajemax = Integer(
         display_name='Puntaje Maximo',
         help='Entero que representa puntaje maximo',
         default=100,
         values={'min': 1},
-        scope=Scope.settings,
-    )
-    comentario = Dict(
-        help='comentarios otorgados',
-        default={},
-        scope=Scope.settings,
-    )
-    puntaje = Dict(
-        help='puntaje otorgado',
-        default={},
-        scope=Scope.preferences,
+        scope=Scope.user_state,
     )
 
-    #editable_fields = ('puntajemax', 'puntaje', 'comentario', 'display_name')
+    has_author_view = True
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
@@ -185,6 +175,28 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
         return student_module
 
+    def author_view(self, context=None):
+        context = {'xblock': self, 'location': str(
+            self.location).split('@')[-1]}
+        template = self.render_template(
+            'static/html/author_view.html', context)
+        frag = Fragment(template)
+        frag.add_css(self.resource_string("static/css/eollistgrade.css"))
+        return frag
+
+    def studio_view(self, context=None):
+        context = {'xblock': self,
+                   'location': str(self.location).split('@')[-1],
+                   'display_name': self.display_name}
+        template = self.render_template(
+            'static/html/studio_view.html', context)
+        frag = Fragment(template)
+        frag.add_css(self.resource_string("static/css/eollistgrade.css"))
+        frag.add_javascript(self.resource_string(
+            "static/js/src/eollistgrade_studio.js"))
+        frag.initialize_js('EolListGradeXBlock')
+        return frag
+
     def student_view(self, context=None):
         context = self.get_context()
         template = self.render_template(
@@ -261,7 +273,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         state['score_max'] = data.get('puntajemax')
         student_module.state = json.dumps(state)
         student_module.save()
-
+        self.puntajemax = int(data.get('puntajemax'))
         student_item = {
             'student_id': data.get('id'),
             'course_id': self.block_course_id,
@@ -271,7 +283,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         submission = self.get_submission(data.get('id'))
         if submission:
             submissions_api.set_score(
-                submission['uuid'], score, data.get('puntajemax'))
+                submission['uuid'], score, int(data.get('puntajemax')))
         else:
             submission = submissions_api.create_submission(
                 student_item, 'any answer')
@@ -283,6 +295,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     @XBlock.json_handler
     def savestudentanswersall(self, data, suffix=''):
+        self.puntajemax = int(data.get('puntajemax'))
         for fila in data.get('data'):
             student_module = self.get_or_create_student_module(fila[0])
             state = json.loads(student_module.state)
@@ -302,7 +315,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             submission = self.get_submission(fila[0])
             if submission:
                 submissions_api.set_score(
-                    submission['uuid'], score, data.get('puntajemax'))
+                    submission['uuid'], score, int(data.get('puntajemax')))
             else:
                 submission = submissions_api.create_submission(
                     student_item, 'any answer')
@@ -311,6 +324,15 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                         data.get('puntajemax')))
 
         return {'result': 'success', 'id': '00'}
+
+    @XBlock.json_handler
+    def studio_submit(self, data, suffix=''):
+        """
+        Called when submitting the form in Studio.
+        """
+        self.display_name = data.get('display_name') or ""
+
+        return {'result': 'success'}
 
     def render_template(self, template_path, context):
         template_str = self.resource_string(template_path)

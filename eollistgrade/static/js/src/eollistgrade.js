@@ -19,9 +19,11 @@ function EolListGradeXBlock(runtime, element) {
         if (id != "00" && result.result == 'success'){            
             var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells            
             $element.find('#eollistgrade_label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
+            $element.find('#eollistgrade_wrong_label')[0].textContent = ""
         }
         if (id == "00" && result.result == 'success'){
             $element.find('#eollistgrade_label')[0].textContent = "Guardado Correctamente Todas las Calificaciones"
+            $element.find('#eollistgrade_wrong_label')[0].textContent = ""
         }
     }
 
@@ -45,7 +47,7 @@ function EolListGradeXBlock(runtime, element) {
         }        
         colum[5].children[0].disabled = true
        
-        if(puntaje != "" && parseInt(puntaje, 10) <= parseInt(pmax, 10)){
+        if(puntaje != "" && !(puntaje.includes(".")) && !(pmax.includes(".")) && parseInt(puntaje, 10) <= parseInt(pmax, 10) && parseInt(puntaje, 10) > 0){
             $.ajax({
                 type: "POST",
                 url: handlerUrlSaveStudentAnswers,
@@ -55,6 +57,7 @@ function EolListGradeXBlock(runtime, element) {
         }
         else{
             $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"
+            $element.find('#eollistgrade_label')[0].textContent = ""
         }
     });
 
@@ -67,9 +70,10 @@ function EolListGradeXBlock(runtime, element) {
             var id = tabla[i].cells[0].textContent            
             var punt = tabla[i].cells[3].children[0].value
             var com = tabla[i].cells[4].children[0].value
-            if (parseInt(punt, 10) > parseInt(pmax, 10) || punt == ""){
+            if (punt == "" || punt.includes(".") || pmax.includes(".") || parseInt(punt, 10) > parseInt(pmax, 10) || parseInt(punt, 10) < 1){
                 check = false
-                $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"                
+                $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"
+                $element.find('#eollistgrade_label')[0].textContent = ""                
             }
             else{
                 var aux =  new Array(id, punt, com);
@@ -88,11 +92,8 @@ function EolListGradeXBlock(runtime, element) {
 
    $('.decimalx').keyup(function(){
         var val = $(this).val()
-        if(isNaN(val)){
-            val = val.replace(/[^0-9\.]/g , '')
-            if(val.split('.').length > 2){ 
-                val = val.replace(/\.+$/ , "")
-            }
+        if(isNaN(val) || val.includes(".")){
+            val = val.replace(/[^0-9]/g , '')            
         }
         $(this).val(val)
         var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
@@ -101,7 +102,7 @@ function EolListGradeXBlock(runtime, element) {
         }
         var fila = $(this).closest('tr')
         var colum = fila[0].cells  
-        if (parseInt(val, 10) <= parseInt(pmax, 10) ){
+        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) > 0 ){
             colum[5].children[0].disabled = false
         }   
         else{
@@ -117,7 +118,7 @@ function EolListGradeXBlock(runtime, element) {
         var fila = $(this).closest('tr')
         var colum = fila[0].cells
         var val = colum[3].children[0].value
-        if (parseInt(val, 10) <= parseInt(pmax, 10) ){
+        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) > 0 ){
             if (colum[5].children[0].disabled){
                 colum[5].children[0].disabled = false
             }                       
@@ -129,11 +130,8 @@ function EolListGradeXBlock(runtime, element) {
     });
     $('.ptjemax').keyup(function(){
         var val = $(this).val()
-        if(isNaN(val)){
-            val = val.replace(/[^0-9\.]/g , '')
-            if(val.split('.').length > 2){ 
-                val = val.replace(/\.+$/ , "")
-            }
+        if(isNaN(val) || val.includes(".")){
+            val = val.replace(/[^0-9]/g , '')            
         }
         $(this).val(val)
        
@@ -152,7 +150,7 @@ function EolListGradeXBlock(runtime, element) {
             }
             var inp = trs[i].cells[5].children[0]
             
-            if (parseInt(punt, 10) <= parseInt(val, 10) ){
+            if (parseInt(punt, 10) <= parseInt(val, 10) && parseInt(punt, 10) > 0 ){
                 inp.disabled = false
             }   
             else{

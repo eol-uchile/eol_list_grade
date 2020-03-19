@@ -116,3 +116,19 @@ table, th, td {
     margin-right: auto !important;
     min-width: 650px !important; 
 }
+
+.eollistgrade_block .alert-info {
+    background-color: #d9edf7;
+    border-color: #bcdff1;
+    color: #31708f !important;
+}
+
+.eollistgrade_block .alert {
+    position: relative;
+    font-style: italic;
+    padding: .75rem 1.25rem;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    margin-bottom: 1em;
+}
+

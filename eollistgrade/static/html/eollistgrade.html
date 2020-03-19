@@ -1,7 +1,7 @@
 <div class="eollistgrade_block">
    {% if is_course_staff %}   
     <div class="wrap-instructor-info" style="display: block;">
-        <h2>Estudiantes Calificados</h2></br>
+        <h2>{{xblock.display_name}}</h2></br>
         <label style="cursor: default;">Estudiantes Calificados: {{calificado}} de {{ lista_alumnos|length }}</label></br>  
         <a class="button" id="grade-submissions-button"
             href="#grade-1" style="margin-top: inherit;color: black;"> Calificaciones</a>
@@ -11,8 +11,8 @@
         <div class="inner-wrapper" style="color: black; overflow: auto;text-align: center;">
             <header><h2><span class="display_name">Calificaciones Estudiantes</span></h2></header>
             <br/>
-            <label style="cursor: default;" id="eollistgrade_label" style="color: royalblue;"></label>
-            <label style="cursor: default;" id="eollistgrade_wrong_label" style="color: red;"></label>            
+            <label style="cursor: default;color: royalblue;" id="eollistgrade_label" ></label>
+            <label style="cursor: default;color: red;" id="eollistgrade_wrong_label"></label>            
             <div class="row">
                 <label style="cursor: default;" for="ptjemax">Puntaje Maximo</label>
                 <input name="ptjemax" class="ptjemax" type="text" style="width: 60px;" placeholder="100" value="{{ xblock.puntajemax }}" >
