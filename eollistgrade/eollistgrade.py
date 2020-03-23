@@ -3,6 +3,8 @@ import six
 import six.moves.urllib.error
 import six.moves.urllib.parse
 import six.moves.urllib.request
+import logging
+import json
 
 from django.template import Context, Template
 
@@ -12,12 +14,13 @@ from xblock.fragment import Fragment
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from lms.djangoapps.courseware.courses import get_course_with_access
+
 from django.contrib.auth.models import User
 from submissions import api as submissions_api
 from student.models import user_by_anonymous_id
 from courseware.models import StudentModule
-import json
 
+log = logging.getLogger(__name__)
 # Make '_' a no-op so we can scrape strings
 
 
@@ -163,8 +166,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             StudentModule: A StudentModule object
         """
         # pylint: disable=no-member
+        
         student_module, created = StudentModule.objects.get_or_create(
-            course_id=self.course_id,
+            course_id= self.course_id,
             module_state_key=self.location,
             student_id=student_id,
             defaults={
@@ -172,7 +176,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 'module_type': self.category,
             }
         )
-
+        if created:
+            log.info(
+                "Created student module %s [course: %s] [student: %s]",
+                student_module.module_state_key,
+                student_module.course_id,
+                student_module.student.username
+            )
         return student_module
 
     def author_view(self, context=None):
@@ -263,56 +273,37 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             context['is_course_staff'] = False
         return context
 
+    def validar_datos(self, data):
+        return data.get('puntaje').lstrip('+').isdigit() and data.get('puntajemax').lstrip('+').isdigit()
+
+    def validar_datos_all(self, data):
+        score = True
+        for fila in data.get('data'):
+            if not fila[1].lstrip('+').isdigit():
+                score = False
+                break
+        return score and data.get('puntajemax').lstrip('+').isdigit()
+        
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
-        student_module = self.get_or_create_student_module(data.get('id'))
-        state = json.loads(student_module.state)
-        score = int(data.get('puntaje'))
-        state['comment'] = data.get('comentario')
-        state['student_score'] = score
-        state['score_max'] = data.get('puntajemax')
-        student_module.state = json.dumps(state)
-        student_module.save()
-        self.puntajemax = int(data.get('puntajemax'))
-        student_item = {
-            'student_id': data.get('id'),
-            'course_id': self.block_course_id,
-            'item_id': self.block_id,
-            'item_type': 'problem'
-        }
-        submission = self.get_submission(data.get('id'))
-        if submission:
-            submissions_api.set_score(
-                submission['uuid'], score, int(data.get('puntajemax')))
-        else:
-            submission = submissions_api.create_submission(
-                student_item, 'any answer')
-            submissions_api.set_score(
-                submission['uuid'], score, int(
-                    data.get('puntajemax')))
-
-        return {'result': 'success', 'id': data.get('id')}
-
-    @XBlock.json_handler
-    def savestudentanswersall(self, data, suffix=''):
-        self.puntajemax = int(data.get('puntajemax'))
-        for fila in data.get('data'):
-            student_module = self.get_or_create_student_module(fila[0])
+        valida = self.validar_datos(data)
+        if self.show_staff_grading_interface() and valida:
+            student_module = self.get_or_create_student_module(data.get('id'))
             state = json.loads(student_module.state)
-            score = int(fila[1])
-            state['comment'] = fila[2]
+            score = int(data.get('puntaje'))
+            state['comment'] = data.get('comentario')
             state['student_score'] = score
             state['score_max'] = data.get('puntajemax')
             student_module.state = json.dumps(state)
             student_module.save()
-
+            self.puntajemax = int(data.get('puntajemax'))
             student_item = {
-                'student_id': fila[0],
+                'student_id': data.get('id'),
                 'course_id': self.block_course_id,
                 'item_id': self.block_id,
                 'item_type': 'problem'
             }
-            submission = self.get_submission(fila[0])
+            submission = self.get_submission(data.get('id'))
             if submission:
                 submissions_api.set_score(
                     submission['uuid'], score, int(data.get('puntajemax')))
@@ -323,7 +314,45 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                     submission['uuid'], score, int(
                         data.get('puntajemax')))
 
-        return {'result': 'success', 'id': '00'}
+            return {'result': 'success', 'id': data.get('id')}
+        
+        return {'result': 'error'}
+
+    @XBlock.json_handler
+    def savestudentanswersall(self, data, suffix=''):
+        valida = self.validar_datos_all(data)
+        if self.show_staff_grading_interface() and valida:
+            self.puntajemax = int(data.get('puntajemax'))
+            for fila in data.get('data'):
+                student_module = self.get_or_create_student_module(fila[0])
+                state = json.loads(student_module.state)
+                score = int(fila[1])
+                state['comment'] = fila[2]
+                state['student_score'] = score
+                state['score_max'] = data.get('puntajemax')
+                student_module.state = json.dumps(state)
+                student_module.save()
+
+                student_item = {
+                    'student_id': fila[0],
+                    'course_id': self.block_course_id,
+                    'item_id': self.block_id,
+                    'item_type': 'problem'
+                }
+                submission = self.get_submission(fila[0])
+                if submission:
+                    submissions_api.set_score(
+                        submission['uuid'], score, int(data.get('puntajemax')))
+                else:
+                    submission = submissions_api.create_submission(
+                        student_item, 'any answer')
+                    submissions_api.set_score(
+                        submission['uuid'], score, int(
+                            data.get('puntajemax')))
+
+            return {'result': 'success', 'id': '00'}
+        
+        return {'result': 'error'}
 
     @XBlock.json_handler
     def studio_submit(self, data, suffix=''):

@@ -10,7 +10,7 @@
 
 function EolListGradeXBlock(runtime, element) {
 
-    $(element).find('.save-button').bind('click', function(eventObject) {
+    $(element).find('.save-button-eollistgrade').bind('click', function(eventObject) {
         eventObject.preventDefault();
         var handlerUrl = runtime.handlerUrl(element, 'studio_submit');
 
@@ -28,7 +28,7 @@ function EolListGradeXBlock(runtime, element) {
         });
     });
     
-    $(element).find('.cancel-button').bind('click', function(eventObject) {
+    $(element).find('.cancel-button-eollistgrade').bind('click', function(eventObject) {
         eventObject.preventDefault();
         runtime.notify('cancel', {});
     });

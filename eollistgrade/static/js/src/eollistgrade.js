@@ -15,17 +15,23 @@ function EolListGradeXBlock(runtime, element) {
     var handlerUrlSaveStudentAnswersAll = runtime.handlerUrl(element, 'savestudentanswersall');
 
     function showAnswers(result){
-        var id = result.id
-        if (id != "00" && result.result == 'success'){            
-            var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells            
-            $element.find('#eollistgrade_label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
-            $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+        if (result.result == 'success'){
+            var id = result.id
+            if (id != "00"){            
+                var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells            
+                $element.find('#eollistgrade_label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
+                $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+            }
+            else{
+                $element.find('#eollistgrade_label')[0].textContent = "Guardado Correctamente Todas las Calificaciones"
+                $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+            }
         }
-        if (id == "00" && result.result == 'success'){
-            $element.find('#eollistgrade_label')[0].textContent = "Guardado Correctamente Todas las Calificaciones"
-            $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+        if (result.result == 'error'){
+            $element.find('#eollistgrade_label')[0].textContent = ""
+            $element.find('#eollistgrade_wrong_label')[0].textContent = "Error rol usuario"
         }
-    }
+    }    
 
     $(function ($) {
         var  block = $(element).find(".eollistgrade_block");
@@ -52,7 +58,7 @@ function EolListGradeXBlock(runtime, element) {
                 type: "POST",
                 url: handlerUrlSaveStudentAnswers,
                 data: JSON.stringify({"id": id_student, "puntaje": puntaje, "comentario": comentario, "puntajemax": pmax}),
-                success: showAnswers
+                success: showAnswers                
             });
         }
         else{

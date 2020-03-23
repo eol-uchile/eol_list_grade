@@ -59,3 +59,7 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# openedx test files
+test_root/
+setup.cfg
