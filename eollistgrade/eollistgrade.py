@@ -166,9 +166,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             StudentModule: A StudentModule object
         """
         # pylint: disable=no-member
-        
+
         student_module, created = StudentModule.objects.get_or_create(
-            course_id= self.course_id,
+            course_id=self.course_id,
             module_state_key=self.location,
             student_id=student_id,
             defaults={
@@ -274,7 +274,8 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return context
 
     def validar_datos(self, data):
-        return data.get('puntaje').lstrip('+').isdigit() and data.get('puntajemax').lstrip('+').isdigit()
+        return data.get('puntaje').lstrip(
+            '+').isdigit() and data.get('puntajemax').lstrip('+').isdigit()
 
     def validar_datos_all(self, data):
         score = True
@@ -283,7 +284,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 score = False
                 break
         return score and data.get('puntajemax').lstrip('+').isdigit()
-        
+
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
         valida = self.validar_datos(data)
@@ -315,7 +316,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                         data.get('puntajemax')))
 
             return {'result': 'success', 'id': data.get('id')}
-        
+
         return {'result': 'error'}
 
     @XBlock.json_handler
@@ -351,7 +352,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                             data.get('puntajemax')))
 
             return {'result': 'success', 'id': '00'}
-        
+
         return {'result': 'error'}
 
     @XBlock.json_handler
@@ -359,9 +360,11 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Called when submitting the form in Studio.
         """
-        self.display_name = data.get('display_name') or ""
+        if self.is_course_staff():
+            self.display_name = data.get('display_name') or ""
+            return {'result': 'success'}
 
-        return {'result': 'success'}
+        return {'result': 'error'}
 
     def render_template(self, template_path, context):
         template_str = self.resource_string(template_path)

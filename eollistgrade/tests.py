@@ -27,6 +27,7 @@ import mock
 
 log = logging.getLogger(__name__)
 
+
 class TestRequest(object):
     # pylint: disable=too-few-public-methods
     """
@@ -35,16 +36,24 @@ class TestRequest(object):
     method = None
     body = None
     success = None
-    
+
+
 def fake_student_module():
     """dummy representation of xblock class"""
     return mock.Mock(
-        course_id=CourseLocator(org='foo', course='baz', run='bar'),
+        course_id=CourseLocator(
+            org='foo',
+            course='baz',
+            run='bar'),
         module_state_key="foo",
-        student_id=mock.Mock(username="fred6", is_staff=False, password="test"),
+        student_id=mock.Mock(
+            username="fred6",
+            is_staff=False,
+            password="test"),
         state='{}',
-        save=mock.Mock()
-    )
+        save=mock.Mock())
+
+
 class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """
@@ -55,7 +64,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Helper method that creates a EolListGrade XBlock
         """
-        
+
         course = cls.course
         runtime = Mock(
             course_id=course.id,
@@ -70,7 +79,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         xblock.xmodule_runtime = runtime
         xblock.location = course.id
         xblock.course_id = course.location
-        xblock.category = 'eollistgrade'        
+        xblock.category = 'eollistgrade'
         return xblock
 
     def setUp(self):
@@ -78,148 +87,170 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Creates an xblock
         """
-        self.course = CourseFactory.create(org='foo', course='baz', run='bar')               
-        
+        self.course = CourseFactory.create(org='foo', course='baz', run='bar')
+
         self.xblock = self.make_an_xblock()
 
         with patch('student.models.cc.User.save'):
             # Create the student
-            self.student = UserFactory(username='student', password='test', email='student@edx.org')  
+            self.student = UserFactory(
+                username='student',
+                password='test',
+                email='student@edx.org')
             # Enroll the student in the course
-            CourseEnrollmentFactory(user=self.student, course_id=self.course.id)
+            CourseEnrollmentFactory(
+                user=self.student, course_id=self.course.id)
 
             # Create staff user
-            self.staff_user = UserFactory(username='staff_user', password='test', email='staff@edx.org')
-            CourseEnrollmentFactory(user=self.staff_user, course_id=self.course.id)
-            CourseStaffRole(self.course.id).add_users(self.staff_user)            
+            self.staff_user = UserFactory(
+                username='staff_user',
+                password='test',
+                email='staff@edx.org')
+            CourseEnrollmentFactory(
+                user=self.staff_user,
+                course_id=self.course.id)
+            CourseStaffRole(self.course.id).add_users(self.staff_user)
 
-            # Log the student in
-            self.client = Client()
-            assert_true(self.client.login(username='student', password='test'))
-
-            # Log the user staff in
-            self.staff_client = Client()
-            assert_true(self.staff_client.login(username='staff_user', password='test'))
-        
     def test_validate_field_data(self):
         """
         Reviso si se creo bien el xblock por defecto, sin intentos y sin respuestas.
         """
         self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
         self.assertEqual(self.xblock.puntajemax, 100)
-    
+
     def test_edit_block_studio(self):
         """
         Reviso que este funcionando el submit studio edits
         """
-        #pruebo agregar preguntas
         request = TestRequest()
         request.method = 'POST'
-
-        data = json.dumps({ 'display_name': 'testname' })
+        self.xblock.xmodule_runtime.user_is_staff = True
+        data = json.dumps({'display_name': 'testname'})
         request.body = data
         response = self.xblock.studio_submit(request)
         self.assertEqual(self.xblock.display_name, 'testname')
 
-    def test_save_staff_user(self):
-        # pylint: disable=protected-access
+    def test_edit_block_studio_no_staff(self):
         """
-        Checks the student view for student specific instance variables.
-        """       
+        Reviso que este funcionando el submit studio edits
+        """
         request = TestRequest()
         request.method = 'POST'
-        
+        self.xblock.xmodule_runtime.user_is_staff = False
+        data = json.dumps({'display_name': 'testname'})
+        request.body = data
+        response = self.xblock.studio_submit(request)
+        self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
+
+    def test_save_staff_user(self):
+        """
+        Checks the student view for student specific instance variables.
+        """
+        request = TestRequest()
+        request.method = 'POST'
+
         self.xblock.xmodule_runtime.user_is_staff = True
 
-        data = json.dumps({"id": self.student.id, "puntaje": "11", "comentario": "comentario121", "puntajemax": "121"})
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121",
+                           "puntajemax": "121"})
         request.body = data
         module = fake_student_module()
-        with mock.patch( 'eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module ):
-            response = self.xblock.savestudentanswers(request)            
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
 
-        self.assertEqual(module.state, '{"comment": "comentario121", "score_max": "121", "student_score": 11}')
+        self.assertEqual(
+            module.state,
+            '{"comment": "comentario121", "score_max": "121", "student_score": 11}')
         self.assertEqual(self.xblock.puntajemax, 121)
-        self.assertEqual(self.xblock.get_score(self.student.id), 11)        
+        self.assertEqual(self.xblock.get_score(self.student.id), 11)
 
     def test_save_student_user(self):
-        # pylint: disable=protected-access
         """
         Checks the student view for student specific instance variables.
-        """       
+        """
         request = TestRequest()
         request.method = 'POST'
-        
+
         self.xblock.xmodule_runtime.user_is_staff = False
 
-        data = json.dumps({"id": self.student.id, "puntaje": "11", "comentario": "comentario121", "puntajemax": "121"})
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121",
+                           "puntajemax": "121"})
         request.body = data
         module = fake_student_module()
-        with mock.patch( 'eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module ):
-            response = self.xblock.savestudentanswers(request)            
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
 
         self.assertEqual(module.state, '{}')
         self.assertEqual(self.xblock.puntajemax, 100)
         self.assertEqual(self.xblock.get_score(self.student.id), None)
-    
+
     def test_saveall_staff_user(self):
-        # pylint: disable=protected-access
         """
         Checks the student view for student specific instance variables.
-        """       
+        """
         request = TestRequest()
         request.method = 'POST'
-        
+
         self.xblock.xmodule_runtime.user_is_staff = True
-        datos = [[self.student.id,"11","com1"],[self.staff_user.id,"22","com2"]]
+        datos = [[self.student.id, "11", "com1"],
+                 [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos, "puntajemax": "200"})
         request.body = data
         module = fake_student_module()
-        with mock.patch( 'eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswersall(request)            
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswersall(request)
 
-        self.assertEqual(module.state, '{"comment": "com2", "score_max": "200", "student_score": 22}')
+        self.assertEqual(
+            module.state,
+            '{"comment": "com2", "score_max": "200", "student_score": 22}')
         self.assertEqual(self.xblock.puntajemax, 200)
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), 22)
 
     def test_saveall_student_user(self):
-        # pylint: disable=protected-access
         """
         Checks the student view for student specific instance variables.
-        """       
+        """
         request = TestRequest()
         request.method = 'POST'
-        
+
         self.xblock.xmodule_runtime.user_is_staff = False
 
-        datos = [[self.student.id,"11","com1"],[self.staff_user.id,"22","com2"]]
+        datos = [[self.student.id, "11", "com1"],
+                 [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos, "puntajemax": "200"})
         request.body = data
         module = fake_student_module()
-        with mock.patch( 'eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswersall(request)            
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswersall(request)
 
         self.assertEqual(module.state, '{}')
         self.assertEqual(self.xblock.puntajemax, 100)
         self.assertEqual(self.xblock.get_score(self.student.id), None)
-        self.assertEqual(self.xblock.get_score(self.staff_user.id), None)      
-    
+        self.assertEqual(self.xblock.get_score(self.staff_user.id), None)
+
     def test_wrong_data_staff_user(self):
-        # pylint: disable=protected-access
         """
         Checks the student view for student specific instance variables.
-        """       
+        """
         request = TestRequest()
         request.method = 'POST'
-        
+
         self.xblock.xmodule_runtime.user_is_staff = True
 
-        data = json.dumps({"id": self.student.id, "puntaje": "asd", "comentario": "comentario121", "puntajemax": "asd"})
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "asd",
+                           "comentario": "comentario121",
+                           "puntajemax": "asd"})
         request.body = data
         module = fake_student_module()
-        with mock.patch( 'eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module ):
-            response = self.xblock.savestudentanswers(request)            
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
 
         self.assertEqual(module.state, '{}')
         self.assertEqual(self.xblock.puntajemax, 100)
-        self.assertEqual(self.xblock.get_score(self.student.id), None)        
+        self.assertEqual(self.xblock.get_score(self.student.id), None)

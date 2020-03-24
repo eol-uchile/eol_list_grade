@@ -17,13 +17,19 @@ function EolListGradeXBlock(runtime, element) {
         var data = {
             'display_name': $(element).find('input[name=display_name]').val()
         };
-        //console.log(data)
+        
         if ($.isFunction(runtime.notify)) {
             runtime.notify('save', {state: 'start'});
         }
         $.post(handlerUrl, JSON.stringify(data)).done(function(response) {
-            if ($.isFunction(runtime.notify)) {
+            if (response.result == 'success' && $.isFunction(runtime.notify)) {
                 runtime.notify('save', {state: 'end'});
+            }
+            if (response.result == 'error' && $.isFunction(runtime.notify)) {
+                runtime.notify('error',  {
+                    title: 'Error',
+                    message: 'Falló en Guardar.'
+                });
             }
         });
     });
