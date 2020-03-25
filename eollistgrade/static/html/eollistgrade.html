@@ -57,9 +57,9 @@
     {% else %}
     <div class="wrap-instructor-info" style="display: block;">
         <h2>Calificación</h2>
-        <label style="cursor: default;">Estudiante: {{ usuario.username }}</label></br>
-        {% if puntaje == '0' %}
-            <label style="cursor: default;"> - Aun no a sido calificado</label>  
+        <label style="cursor: default;">El estudiante</label></br>
+        {% if puntaje == '' %}
+            <label style="cursor: default;"> aun no a sido calificado</label></br>
         {% else %}
             <label style="cursor: default;"> Calidicado con: {{ puntaje }} de {{ xblock.puntajemax }}</label></br>
         {% endif %}
@@ -67,5 +67,5 @@
             <label style="cursor: default;"> Comentarios: {{ comentario }}</label> 
         {% endif %}
         </div>
-        {% endif %}
+    {% endif %}
 </div>

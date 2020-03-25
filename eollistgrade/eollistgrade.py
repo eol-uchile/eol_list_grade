@@ -250,26 +250,20 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             context['category'] = type(self).__name__
             context['is_course_staff'] = True
         else:
-            enrolled_student = User.objects.filter(
-                courseenrollment__course_id=course_key,
-                courseenrollment__is_active=1,
-                id=self.scope_ids.user_id
-            ).values('id', 'username', 'email').first()
-            p = '0'
-            if self.get_score(enrolled_student['id']):
-                p = self.get_score(enrolled_student['id'])
-
-            state = self.get_com(
-                enrolled_student['id'],
-                course_key,
-                self.block_id)
+            p = ''
             com = ''
-            if 'comment' in state:
-                com = state['comment']
+            if self.get_score(self.scope_ids.user_id) >= 0:
+                p = self.get_score(self.scope_ids.user_id)
+                state = self.get_com(
+                    self.scope_ids.user_id,
+                    course_key,
+                    self.block_id)
+
+                if 'comment' in state:
+                    com = state['comment']
 
             context['puntaje'] = p
             context['comentario'] = com
-            context['usuario'] = enrolled_student
             context['is_course_staff'] = False
         return context
 
