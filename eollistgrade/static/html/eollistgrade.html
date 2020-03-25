@@ -2,23 +2,19 @@
    {% if is_course_staff %}   
     <div class="wrap-instructor-info" style="display: block;">
         <h2>{{xblock.display_name}}</h2></br>
-        <label style="cursor: default;">Estudiantes Calificados: {{calificado}} de {{ lista_alumnos|length }}</label></br>  
+        <label style="cursor: default;">Estudiantes Calificados: <spin id="calificado">{{calificado}}</spin> de {{ lista_alumnos|length }}</label></br>  
         <a class="button" id="grade-submissions-button"
-            href="#grade-1" style="margin-top: inherit;color: black;"> Calificaciones</a>
+            href="#grade-1-eollistgrade" style="margin-top: inherit;color: black;"> Calificaciones</a>        
     </div>
     
-    <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1" style="height: auto" tabindex="-1">
+    <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1-eollistgrade" style="height: auto" tabindex="-1">
         <div class="inner-wrapper" style="color: black; overflow: auto;text-align: center;">
-            <header><h2><span class="display_name">Calificaciones Estudiantes</span></h2></header>
+            <a class='modal_close' href="javascript:void(0);" onclick="$('#lean_overlay').click();"> <i class='fa fa-times'></i> </a>
+            
+            <h2 style="text-align: center;"><span class="display_name">Calificaciones Estudiantes</span></h2>
             <br/>
             <label style="cursor: default;color: royalblue;" id="eollistgrade_label" ></label>
-            <label style="cursor: default;color: red;" id="eollistgrade_wrong_label"></label>            
-            <div class="row">
-                <label style="cursor: default;" for="ptjemax">Puntaje Maximo</label>
-                <input name="ptjemax" class="ptjemax" type="text" style="width: 60px;" placeholder="100" value="{{ xblock.puntajemax }}" >
-                <input name="sendall" class="sendall" type="button" style="width: 145px;" value="Guardar Todos" >
-            </div>  
-            <br/>       
+            <label style="cursor: default;color: red;" id="eollistgrade_wrong_label"></label>
             <div id="grade-info" style="display: block;">
                 <table style="text-align: center;margin-left:auto;margin-right:auto;">
                     <thead>
@@ -50,7 +46,13 @@
                     </tbody>
                 </table>
             </div>
+            <br/>  
+            <div class="row">
+                <input name="sendall" class="sendall" type="button" style="width: 145px;" value="Guardar Todos" >                
+                <input name="cerrar-eollistgrade" class="cerrar-eollistgrade" type="button" style="width: 145px;" value="Cerrar" >
+            </div>
         </div>
+        
     </section>
     {% else %}
     <div class="wrap-instructor-info" style="display: block;">

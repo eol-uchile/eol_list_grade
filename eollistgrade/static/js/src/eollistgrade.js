@@ -21,15 +21,19 @@ function EolListGradeXBlock(runtime, element) {
                 var a =$element.find('.eollistgrade_block table tbody tr[id='+id+']')[0].cells            
                 $element.find('#eollistgrade_label')[0].textContent = a[1].textContent + " - Guardado Correctamente"
                 $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+                if(!result.calificado){
+                    $element.find("#calificado")[0].textContent = parseInt($element.find("#calificado")[0].textContent) + 1
+                }
             }
             else{
                 $element.find('#eollistgrade_label')[0].textContent = "Guardado Correctamente Todas las Calificaciones"
                 $element.find('#eollistgrade_wrong_label')[0].textContent = ""
+                $element.find("#calificado")[0].textContent = result.n_student
             }
         }
         if (result.result == 'error'){
             $element.find('#eollistgrade_label')[0].textContent = ""
-            $element.find('#eollistgrade_wrong_label')[0].textContent = "Error rol usuario"
+            $element.find('#eollistgrade_wrong_label')[0].textContent = "Error de datos o rol de usuario"
         }
     }    
 
@@ -47,17 +51,15 @@ function EolListGradeXBlock(runtime, element) {
         var id_student = colum[0].textContent
         var puntaje = colum[3].children[0].value
         var comentario = colum[4].children[0].value
-        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
-        if (pmax == ""){
-            pmax= "100"
-        }        
+        var pmax = colum[3].children["max"].textContent
+              
         colum[5].children[0].disabled = true
        
-        if(puntaje != "" && !(puntaje.includes(".")) && !(pmax.includes(".")) && parseInt(puntaje, 10) <= parseInt(pmax, 10) && parseInt(puntaje, 10) > 0){
+        if(puntaje != "" && !(puntaje.includes(".")) && parseInt(puntaje, 10) <= parseInt(pmax, 10) && parseInt(puntaje, 10) >= 0){
             $.ajax({
                 type: "POST",
                 url: handlerUrlSaveStudentAnswers,
-                data: JSON.stringify({"id": id_student, "puntaje": puntaje, "comentario": comentario, "puntajemax": pmax}),
+                data: JSON.stringify({"id": id_student, "puntaje": puntaje, "comentario": comentario}),
                 success: showAnswers                
             });
         }
@@ -67,16 +69,23 @@ function EolListGradeXBlock(runtime, element) {
         }
     });
 
+    $('input[name=cerrar-eollistgrade]').live('click', function () {        
+        $element.find('#grade-1-eollistgrade').hide();
+        $("#lean_overlay").hide();
+        
+    });    
+
     $('input[name=sendall]').live('click', function () {        
-        var tabla = $element.find('#tabla-alumnos')[0].children;
-        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value;
+        var tabla = $element.find('#tabla-alumnos')[0].children;        
         var check = true;
         var data =  new Array();
         for(i=0;i<tabla.length;i++){          
             var id = tabla[i].cells[0].textContent            
             var punt = tabla[i].cells[3].children[0].value
             var com = tabla[i].cells[4].children[0].value
-            if (punt == "" || punt.includes(".") || pmax.includes(".") || parseInt(punt, 10) > parseInt(pmax, 10) || parseInt(punt, 10) < 1){
+            var pmax = tabla[i].cells[3].children["max"].textContent
+
+            if (punt == "" || punt.includes(".") || parseInt(punt, 10) > parseInt(pmax, 10) || parseInt(punt, 10) < 0){
                 check = false
                 $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"
                 $element.find('#eollistgrade_label')[0].textContent = ""                
@@ -90,7 +99,7 @@ function EolListGradeXBlock(runtime, element) {
             $.ajax({
                 type: "POST",
                 url: handlerUrlSaveStudentAnswersAll,
-                data: JSON.stringify({"data": data, "puntajemax": pmax}),
+                data: JSON.stringify({"data": data}),
                 success: showAnswers
             });
         }
@@ -101,14 +110,12 @@ function EolListGradeXBlock(runtime, element) {
         if(isNaN(val) || val.includes(".")){
             val = val.replace(/[^0-9]/g , '')            
         }
-        $(this).val(val)
-        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
-        if (pmax == ""){
-            pmax= "100"
-        }
+        $(this).val(val)  
         var fila = $(this).closest('tr')
-        var colum = fila[0].cells  
-        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) > 0 ){
+        var colum = fila[0].cells
+        var pmax = colum[3].children["max"].textContent
+
+        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) >= 0 ){
             colum[5].children[0].disabled = false
         }   
         else{
@@ -117,14 +124,12 @@ function EolListGradeXBlock(runtime, element) {
     
     });
     $('.comentario').keyup(function(){
-        var pmax = $element.find('.eollistgrade_block input[name=ptjemax]')[0].value
-        if (pmax == ""){
-            pmax= "100"
-        }
         var fila = $(this).closest('tr')
         var colum = fila[0].cells
         var val = colum[3].children[0].value
-        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) > 0 ){
+        var pmax = colum[3].children["max"].textContent
+
+        if (parseInt(val, 10) <= parseInt(pmax, 10) && parseInt(val, 10) >= 0 ){
             if (colum[5].children[0].disabled){
                 colum[5].children[0].disabled = false
             }                       
@@ -133,35 +138,5 @@ function EolListGradeXBlock(runtime, element) {
             colum[5].children[0].disabled = true
         }  
     
-    });
-    $('.ptjemax').keyup(function(){
-        var val = $(this).val()
-        if(isNaN(val) || val.includes(".")){
-            val = val.replace(/[^0-9]/g , '')            
-        }
-        $(this).val(val)
-       
-        var trs =$element.find('.eollistgrade_block table tbody tr')
-        if(val == ""){
-            val=100
-        }
-        
-        for(i=0;i<trs.length;i++){
-            var tds = trs[i].cells[3]
-            var labelmax = tds.children.max
-            labelmax.textContent = val
-            var punt = trs[i].cells[3].children[0].value
-            if(punt == ""){
-                punt=parseInt(val, 10)+1
-            }
-            var inp = trs[i].cells[5].children[0]
-            
-            if (parseInt(punt, 10) <= parseInt(val, 10) && parseInt(punt, 10) > 0 ){
-                inp.disabled = false
-            }   
-            else{
-                inp.disabled = true
-            } 
-        }
     });
 }

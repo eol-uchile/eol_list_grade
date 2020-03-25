@@ -113,7 +113,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_validate_field_data(self):
         """
-        Reviso si se creo bien el xblock por defecto, sin intentos y sin respuestas.
+        Reviso si se creo bien el xblock por defecto.
         """
         self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
         self.assertEqual(self.xblock.puntajemax, 100)
@@ -125,22 +125,11 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         request = TestRequest()
         request.method = 'POST'
         self.xblock.xmodule_runtime.user_is_staff = True
-        data = json.dumps({'display_name': 'testname'})
+        data = json.dumps({'display_name': 'testname', "puntajemax": '200'})
         request.body = data
         response = self.xblock.studio_submit(request)
         self.assertEqual(self.xblock.display_name, 'testname')
-
-    def test_edit_block_studio_no_staff(self):
-        """
-        Reviso que este funcionando el submit studio edits
-        """
-        request = TestRequest()
-        request.method = 'POST'
-        self.xblock.xmodule_runtime.user_is_staff = False
-        data = json.dumps({'display_name': 'testname'})
-        request.body = data
-        response = self.xblock.studio_submit(request)
-        self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
+        self.assertEqual(self.xblock.puntajemax, 200)
 
     def test_save_staff_user(self):
         """
@@ -153,8 +142,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121",
-                           "puntajemax": "121"})
+                           "comentario": "comentario121"})
         request.body = data
         module = fake_student_module()
         with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
@@ -162,8 +150,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.assertEqual(
             module.state,
-            '{"comment": "comentario121", "score_max": "121", "student_score": 11}')
-        self.assertEqual(self.xblock.puntajemax, 121)
+            '{"comment": "comentario121", "student_score": 11}')
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
 
     def test_save_student_user(self):
@@ -177,15 +164,13 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121",
-                           "puntajemax": "121"})
+                           "comentario": "comentario121"})
         request.body = data
         module = fake_student_module()
         with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
             response = self.xblock.savestudentanswers(request)
 
         self.assertEqual(module.state, '{}')
-        self.assertEqual(self.xblock.puntajemax, 100)
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     def test_saveall_staff_user(self):
@@ -198,7 +183,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.xmodule_runtime.user_is_staff = True
         datos = [[self.student.id, "11", "com1"],
                  [self.staff_user.id, "22", "com2"]]
-        data = json.dumps({"data": datos, "puntajemax": "200"})
+        data = json.dumps({"data": datos})
         request.body = data
         module = fake_student_module()
         with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
@@ -206,8 +191,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.assertEqual(
             module.state,
-            '{"comment": "com2", "score_max": "200", "student_score": 22}')
-        self.assertEqual(self.xblock.puntajemax, 200)
+            '{"comment": "com2", "student_score": 22}')
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), 22)
 
@@ -222,14 +206,13 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         datos = [[self.student.id, "11", "com1"],
                  [self.staff_user.id, "22", "com2"]]
-        data = json.dumps({"data": datos, "puntajemax": "200"})
+        data = json.dumps({"data": datos})
         request.body = data
         module = fake_student_module()
         with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
             response = self.xblock.savestudentanswersall(request)
 
         self.assertEqual(module.state, '{}')
-        self.assertEqual(self.xblock.puntajemax, 100)
         self.assertEqual(self.xblock.get_score(self.student.id), None)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), None)
 
@@ -244,13 +227,95 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "asd",
-                           "comentario": "comentario121",
-                           "puntajemax": "asd"})
+                           "comentario": "comentario121"})
         request.body = data
         module = fake_student_module()
         with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
             response = self.xblock.savestudentanswers(request)
 
         self.assertEqual(module.state, '{}')
-        self.assertEqual(self.xblock.puntajemax, 100)
+        self.assertEqual(self.xblock.get_score(self.student.id), None)
+
+    def test_save_student_score_max_score(self):
+        """
+        Checks the student view for student specific instance variables.
+        """
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": self.xblock.puntajemax,
+                           "comentario": "comentario121"})
+        request.body = data
+        module = fake_student_module()
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
+
+        self.assertEqual(
+            module.state,
+            '{"comment": "comentario121", "student_score": 100}')
+        self.assertEqual(self.xblock.get_score(self.student.id), 100)
+
+    def test_save_student_score_min_score(self):
+        """
+        Checks the student view for student specific instance variables.
+        """
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "0",
+                           "comentario": "comentario121"})
+        request.body = data
+        module = fake_student_module()
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
+
+        self.assertEqual(
+            module.state,
+            '{"comment": "comentario121", "student_score": 0}')
+        self.assertEqual(self.xblock.get_score(self.student.id), 0)
+
+    def test_save_student_score_min_score_wrong(self):
+        """
+        Checks the student view for student specific instance variables.
+        """
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "-1",
+                           "comentario": "comentario121"})
+        request.body = data
+        module = fake_student_module()
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
+
+        self.assertEqual(module.state, '{}')
+        self.assertEqual(self.xblock.get_score(self.student.id), None)
+
+    def test_save_student_score_max_score_wrong(self):
+        """
+        Checks the student view for student specific instance variables.
+        """
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "101",
+                           "comentario": "comentario121"})
+        request.body = data
+        module = fake_student_module()
+        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
+            response = self.xblock.savestudentanswers(request)
+
+        self.assertEqual(module.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)

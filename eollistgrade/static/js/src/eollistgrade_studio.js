@@ -15,7 +15,8 @@ function EolListGradeXBlock(runtime, element) {
         var handlerUrl = runtime.handlerUrl(element, 'studio_submit');
 
         var data = {
-            'display_name': $(element).find('input[name=display_name]').val()
+            'display_name': $(element).find('input[name=display_name]').val(),
+            'puntajemax': $(element).find('input[name=puntajemax]').val(),
         };
         
         if ($.isFunction(runtime.notify)) {
@@ -25,10 +26,10 @@ function EolListGradeXBlock(runtime, element) {
             if (response.result == 'success' && $.isFunction(runtime.notify)) {
                 runtime.notify('save', {state: 'end'});
             }
-            if (response.result == 'error' && $.isFunction(runtime.notify)) {
+            else {
                 runtime.notify('error',  {
-                    title: 'Error',
-                    message: 'Falló en Guardar.'
+                    title: 'Error: Falló en Guardar',
+                    message: 'Revise los campos si estan correctos.'
                 });
             }
         });

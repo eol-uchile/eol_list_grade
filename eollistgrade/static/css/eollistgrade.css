@@ -131,4 +131,33 @@ table, th, td {
     border-radius: .25rem;
     margin-bottom: 1em;
 }
+.eollistgrade_block .cerrar-eollistgrade {
+    border: 1px solid #fd2626;
+    box-shadow: inset 0 1px 0 0 #d43131;
+    color: #fff;
+    background-color: #ff5d5d;
+    background-image: linear-gradient(#f76b6b,#c30000);
+    text-shadow: 0 1px 0 #000000;
+}
+.eollistgrade_block .cerrar-eollistgrade:hover{
+    border: 1px solid #fd2626 !important;
+    box-shadow: inset 0 1px 0 0 #d43131 !important;
+    color: #fff !important;
+    background-color: #ff5d5d !important;
+    background-image: linear-gradient(#d24f4f,#e63333) !important;
+    text-shadow: 0 1px 0 #000000 !important;
+}
+.eollistgrade_block .modal_close {
+    position: relative;
+    top: 12px;
+    right: 12px;
+    left: 98%;
+    display: block;
+    width: 14px;
+    height: 14px;
+    color: #333;
+    z-index: 2;
+  text-decoration: none;
+}
 
+.eollistgrade_block .modal_close:hover {color: #dadada; transition: .3s ease-in-out;}

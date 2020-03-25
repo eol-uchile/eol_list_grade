@@ -55,11 +55,12 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         display_name='Puntaje Maximo',
         help='Entero que representa puntaje maximo',
         default=100,
-        values={'min': 1},
-        scope=Scope.user_state,
+        values={'min': 0},
+        scope=Scope.settings,
     )
 
     has_author_view = True
+    has_score = True
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
@@ -196,8 +197,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     def studio_view(self, context=None):
         context = {'xblock': self,
-                   'location': str(self.location).split('@')[-1],
-                   'display_name': self.display_name}
+                   'location': str(self.location).split('@')[-1]}
         template = self.render_template(
             'static/html/studio_view.html', context)
         frag = Fragment(template)
@@ -274,30 +274,36 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return context
 
     def validar_datos(self, data):
-        return data.get('puntaje').lstrip(
-            '+').isdigit() and data.get('puntajemax').lstrip('+').isdigit()
+        return str(
+            data.get('puntaje')).lstrip('+').isdigit() and int(
+            data.get('puntaje')) >= 0 and int(
+            data.get('puntaje')) <= self.puntajemax
 
     def validar_datos_all(self, data):
         score = True
         for fila in data.get('data'):
-            if not fila[1].lstrip('+').isdigit():
+            if not str(fila[1]).lstrip('+').isdigit() or int(fila[1]
+                                                             ) < 0 or int(fila[1]) > self.puntajemax:
                 score = False
                 break
-        return score and data.get('puntajemax').lstrip('+').isdigit()
+        return score
+
+    def max_score(self):
+        return self.puntajemax
 
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
         valida = self.validar_datos(data)
         if self.show_staff_grading_interface() and valida:
+            calificado = True
             student_module = self.get_or_create_student_module(data.get('id'))
             state = json.loads(student_module.state)
             score = int(data.get('puntaje'))
             state['comment'] = data.get('comentario')
             state['student_score'] = score
-            state['score_max'] = data.get('puntajemax')
             student_module.state = json.dumps(state)
             student_module.save()
-            self.puntajemax = int(data.get('puntajemax'))
+
             student_item = {
                 'student_id': data.get('id'),
                 'course_id': self.block_course_id,
@@ -307,15 +313,18 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             submission = self.get_submission(data.get('id'))
             if submission:
                 submissions_api.set_score(
-                    submission['uuid'], score, int(data.get('puntajemax')))
+                    submission['uuid'], score, self.puntajemax)
             else:
+                calificado = False
                 submission = submissions_api.create_submission(
                     student_item, 'any answer')
                 submissions_api.set_score(
-                    submission['uuid'], score, int(
-                        data.get('puntajemax')))
+                    submission['uuid'], score, self.puntajemax)
 
-            return {'result': 'success', 'id': data.get('id')}
+            return {
+                'result': 'success',
+                'id': data.get('id'),
+                'calificado': calificado}
 
         return {'result': 'error'}
 
@@ -323,14 +332,12 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
     def savestudentanswersall(self, data, suffix=''):
         valida = self.validar_datos_all(data)
         if self.show_staff_grading_interface() and valida:
-            self.puntajemax = int(data.get('puntajemax'))
             for fila in data.get('data'):
                 student_module = self.get_or_create_student_module(fila[0])
                 state = json.loads(student_module.state)
                 score = int(fila[1])
                 state['comment'] = fila[2]
                 state['student_score'] = score
-                state['score_max'] = data.get('puntajemax')
                 student_module.state = json.dumps(state)
                 student_module.save()
 
@@ -343,15 +350,18 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 submission = self.get_submission(fila[0])
                 if submission:
                     submissions_api.set_score(
-                        submission['uuid'], score, int(data.get('puntajemax')))
+                        submission['uuid'], score, self.puntajemax)
                 else:
                     submission = submissions_api.create_submission(
                         student_item, 'any answer')
                     submissions_api.set_score(
-                        submission['uuid'], score, int(
-                            data.get('puntajemax')))
+                        submission['uuid'], score, self.puntajemax)
 
-            return {'result': 'success', 'id': '00'}
+            return {
+                'result': 'success',
+                'id': '00',
+                'n_student': len(
+                    data.get('data'))}
 
         return {'result': 'error'}
 
@@ -360,10 +370,11 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Called when submitting the form in Studio.
         """
-        if self.is_course_staff():
+        if data.get('puntajemax').lstrip(
+                '+').isdigit() and int(data.get('puntajemax')) >= 0:
             self.display_name = data.get('display_name') or ""
+            self.puntajemax = int(data.get('puntajemax')) or 100
             return {'result': 'success'}
-
         return {'result': 'error'}
 
     def render_template(self, template_path, context):
