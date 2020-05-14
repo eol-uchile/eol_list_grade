@@ -38,22 +38,6 @@ class TestRequest(object):
     success = None
 
 
-def fake_student_module():
-    """dummy representation of xblock class"""
-    return mock.Mock(
-        course_id=CourseLocator(
-            org='foo',
-            course='baz',
-            run='bar'),
-        module_state_key="foo",
-        student_id=mock.Mock(
-            username="fred6",
-            is_staff=False,
-            password="test"),
-        state='{}',
-        save=mock.Mock())
-
-
 class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """
@@ -77,8 +61,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         field_data = DictFieldData(kw)
         xblock = EolListGradeXBlock(runtime, field_data, scope_ids)
         xblock.xmodule_runtime = runtime
-        xblock.location = course.id
-        xblock.course_id = course.location
+        xblock.location = course.location
+        xblock.course_id = course.id
         xblock.category = 'eollistgrade'
         return xblock
 
@@ -135,6 +119,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -144,12 +129,17 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "11",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
 
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            module.state,
+            state.state,
             '{"comment": "comentario121", "student_score": 11}')
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
 
@@ -157,6 +147,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -166,17 +157,22 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "11",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
-        self.assertEqual(module.state, '{}')
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
+        self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     def test_saveall_staff_user(self):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -185,12 +181,30 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                  [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswersall(request)
+
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        module_staff = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.staff_user.id,
+            course_id=self.course.id,
+            state='{}')
+        module_staff.save()
+
+        response = self.xblock.savestudentanswersall(request)
+        state = StudentModule.objects.get(pk=module.id)
+        state_staff = StudentModule.objects.get(pk=module_staff.id)
 
         self.assertEqual(
-            module.state,
+            state.state,
+            '{"comment": "com1", "student_score": 11}')
+        self.assertEqual(
+            state_staff.state,
             '{"comment": "com2", "student_score": 22}')
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), 22)
@@ -199,6 +213,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -208,11 +223,26 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                  [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswersall(request)
 
-        self.assertEqual(module.state, '{}')
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        module_staff = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.staff_user.id,
+            course_id=self.course.id,
+            state='{}')
+        module_staff.save()
+
+        response = self.xblock.savestudentanswersall(request)
+        state = StudentModule.objects.get(pk=module.id)
+        state_staff = StudentModule.objects.get(pk=module_staff.id)
+        self.assertEqual(state.state, '{}')
+        self.assertEqual(state_staff.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), None)
 
@@ -220,6 +250,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -229,17 +260,22 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "asd",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
-        self.assertEqual(module.state, '{}')
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
+        self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     def test_save_student_score_max_score(self):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -249,12 +285,16 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": self.xblock.puntajemax,
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            module.state,
+            state.state,
             '{"comment": "comentario121", "student_score": 100}')
         self.assertEqual(self.xblock.get_score(self.student.id), 100)
 
@@ -262,6 +302,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -271,12 +312,16 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "0",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            module.state,
+            state.state,
             '{"comment": "comentario121", "student_score": 0}')
         self.assertEqual(self.xblock.get_score(self.student.id), 0)
 
@@ -284,6 +329,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -293,17 +339,22 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "-1",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
-        self.assertEqual(module.state, '{}')
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
+        self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     def test_save_student_score_max_score_wrong(self):
         """
         Checks the student view for student specific instance variables.
         """
+        from courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -313,9 +364,13 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                            "puntaje": "101",
                            "comentario": "comentario121"})
         request.body = data
-        module = fake_student_module()
-        with mock.patch('eollistgrade.eollistgrade.EolListGradeXBlock.get_or_create_student_module', return_value=module):
-            response = self.xblock.savestudentanswers(request)
-
-        self.assertEqual(module.state, '{}')
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        state = StudentModule.objects.get(pk=module.id)
+        self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)

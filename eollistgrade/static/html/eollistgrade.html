@@ -56,12 +56,11 @@
     </section>
     {% else %}
     <div class="wrap-instructor-info" style="display: block;">
-        <h2>Calificación</h2>
-        <label style="cursor: default;">El estudiante</label></br>
+        <h2>Calificación</h2>        
         {% if puntaje == '' %}
-            <label style="cursor: default;"> aun no a sido calificado</label></br>
+            <label style="cursor: default;">No tiene calificaciones</label>
         {% else %}
-            <label style="cursor: default;"> Calidicado con: {{ puntaje }} de {{ xblock.puntajemax }}</label></br>
+            <label style="cursor: default;"> Calificado con: {{ puntaje }} de {{ xblock.puntajemax }}</label></br>
         {% endif %}
         {% if comentario != '' %}
             <label style="cursor: default;"> Comentarios: {{ comentario }}</label> 
