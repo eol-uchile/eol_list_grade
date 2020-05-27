@@ -136,8 +136,12 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Return student's current score.
         """
+        from student.models import anonymous_id_for_user
+        
+        course_key = self.course_id
+        anonymous_user_id = anonymous_id_for_user(User.objects.get(id=student_id), course_key)
         score = submissions_api.get_score(
-            self.get_student_item_dict(student_id)
+            self.get_student_item_dict(anonymous_user_id)
         )
         if score:
             return score['points_earned']
@@ -219,8 +223,8 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return frag
 
     def get_context(self):
-        aux = self.block_course_id
-        course_key = CourseKey.from_string(aux)
+        
+        course_key = self.course_id
         enrolled_students = User.objects.filter(
             courseenrollment__course_id=course_key,
             courseenrollment__is_active=1
@@ -297,14 +301,20 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             state['student_score'] = score
             student_module.state = json.dumps(state)
             student_module.save()
-
+            
+            from student.models import anonymous_id_for_user
+            
+            course_key = self.course_id
+            anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(data.get('id'))), course_key)
+            log.error(course_key)
             student_item = {
-                'student_id': data.get('id'),
+                'student_id': anonymous_user_id,
                 'course_id': self.block_course_id,
                 'item_id': self.block_id,
                 'item_type': 'problem'
             }
-            submission = self.get_submission(data.get('id'))
+            
+            submission = self.get_submission(anonymous_user_id)
             if submission:
                 submissions_api.set_score(
                     submission['uuid'], score, self.puntajemax)
@@ -335,13 +345,18 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 student_module.state = json.dumps(state)
                 student_module.save()
 
+                from student.models import anonymous_id_for_user
+                
+                course_key = self.course_id
+                anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(fila[0])), course_key)
+                log.error(course_key)
                 student_item = {
-                    'student_id': fila[0],
+                    'student_id': anonymous_user_id,
                     'course_id': self.block_course_id,
                     'item_id': self.block_id,
                     'item_type': 'problem'
                 }
-                submission = self.get_submission(fila[0])
+                submission = self.get_submission(anonymous_user_id)
                 if submission:
                     submissions_api.set_score(
                         submission['uuid'], score, self.puntajemax)

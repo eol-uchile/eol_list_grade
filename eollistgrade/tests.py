@@ -115,7 +115,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(self.xblock.display_name, 'testname')
         self.assertEqual(self.xblock.puntajemax, 200)
 
-    def test_save_staff_user(self):
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_save_staff_user(self, _):
         """
         Checks the student view for student specific instance variables.
         """
@@ -168,7 +169,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
-    def test_saveall_staff_user(self):
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_saveall_staff_user(self, _):
         """
         Checks the student view for student specific instance variables.
         """
@@ -271,7 +273,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(state.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
-    def test_save_student_score_max_score(self):
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_save_student_score_max_score(self, _):
         """
         Checks the student view for student specific instance variables.
         """
@@ -298,7 +301,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
             '{"comment": "comentario121", "student_score": 100}')
         self.assertEqual(self.xblock.get_score(self.student.id), 100)
 
-    def test_save_student_score_min_score(self):
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_save_student_score_min_score(self, _):
         """
         Checks the student view for student specific instance variables.
         """
