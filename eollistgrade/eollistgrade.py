@@ -145,6 +145,8 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         )
         if score:
             return score['points_earned']
+        else:
+            None
 
     def get_com(self, student_id, course_key, block_key):
         """
@@ -235,8 +237,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         if self.show_staff_grading_interface():
             for a in enrolled_students:
                 p = ''
-                if self.get_score(a['id']):
-                    p = self.get_score(a['id'])
+                aux_pun = self.get_score(a['id'])
+                if aux_pun is not None and aux_pun >= 0:
+                    p = aux_pun
                     calificado = calificado + 1
 
                 state = self.get_com(a['id'], course_key, self.block_id)
@@ -256,8 +259,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         else:
             p = ''
             com = ''
-            if self.get_score(self.scope_ids.user_id) >= 0:
-                p = self.get_score(self.scope_ids.user_id)
+            aux_pun = self.get_score(self.scope_ids.user_id)
+            if aux_pun is not None and aux_pun >= 0:
+                p = aux_pun
                 state = self.get_com(
                     self.scope_ids.user_id,
                     course_key,
