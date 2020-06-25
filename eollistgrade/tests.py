@@ -96,14 +96,14 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_validate_field_data(self):
         """
-        Reviso si se creo bien el xblock por defecto.
+            Verify if default xblock is created correctly
         """
         self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
         self.assertEqual(self.xblock.puntajemax, 100)
 
     def test_edit_block_studio(self):
         """
-        Reviso que este funcionando el submit studio edits
+            Verify submit studio edits is working
         """
         request = TestRequest()
         request.method = 'POST'
@@ -117,7 +117,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_staff_user(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -145,7 +145,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_save_student_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by student user
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -171,7 +171,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_saveall_staff_user(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment of all students by staff user
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -212,7 +212,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_saveall_student_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment of all students by student user
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -249,7 +249,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_wrong_data_staff_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with wrong score
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -275,7 +275,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_student_score_max_score(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score = max score
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -303,7 +303,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_student_score_min_score(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score = 0
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -330,7 +330,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_save_student_score_min_score_wrong(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score < 0
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
@@ -355,7 +355,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_save_student_score_max_score_wrong(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score > max score
         """
         from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()

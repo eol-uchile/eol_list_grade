@@ -276,12 +276,18 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return context
 
     def validar_datos(self, data):
+        """
+            Verify if data is valid per student
+        """
         return str(
             data.get('puntaje')).lstrip('+').isdigit() and int(
             data.get('puntaje')) >= 0 and int(
             data.get('puntaje')) <= self.puntajemax
 
     def validar_datos_all(self, data):
+        """
+            Verify if all students data is valid
+        """
         score = True
         for fila in data.get('data'):
             if not str(fila[1]).lstrip('+').isdigit() or int(fila[1]
@@ -295,6 +301,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
+        """
+            Save the score and comment per student
+        """
         valida = self.validar_datos(data)
         if self.show_staff_grading_interface() and valida:
             calificado = True
@@ -338,6 +347,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     @XBlock.json_handler
     def savestudentanswersall(self, data, suffix=''):
+        """
+            Save the score and comment of all students
+        """
         valida = self.validar_datos_all(data)
         if self.show_staff_grading_interface() and valida:
             for fila in data.get('data'):
