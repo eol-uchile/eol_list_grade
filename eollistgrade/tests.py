@@ -205,8 +205,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
             json.loads(state.state),
             json.loads('{"comment": "com1", "student_score": 11}'))
         self.assertEqual(
-            state_staff.state,
-            '{"comment": "com2", "student_score": 22}')
+            json.loads(state_staff.state),
+            json.loads('{"comment": "com2", "student_score": 22}'))
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), 22)
 
