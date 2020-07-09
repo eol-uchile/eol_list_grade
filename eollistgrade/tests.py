@@ -114,6 +114,120 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(self.xblock.display_name, 'testname')
         self.assertEqual(self.xblock.puntajemax, 200)
 
+    def test_student_view_staff(self):
+        """
+            Verify context in student_view staff user
+        """
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '',
+                            'com': ''}
+        context_staff = {'id': self.staff_user.id,
+                            'username': self.staff_user.username,
+                            'correo': self.staff_user.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], True)
+        self.assertEqual(response['calificado'], 0)
+        self.assertEqual(response['lista_alumnos'][0], context_staff)
+        self.assertEqual(response['lista_alumnos'][1], context_student)
+
+    def test_student_view_student(self):
+        """
+            Verify context in student_view student user
+        """
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = False
+        self.xblock.scope_ids.user_id = self.student.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], False)
+        self.assertEqual(response['comentario'], '')
+        self.assertEqual(response['puntaje'], '')
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_student_view_staff_with_data(self, _):
+        """
+            Verify context in student_view staff user with data
+        """
+        from lms.djangoapps.courseware.models import StudentModule
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121"})
+        request.body = data.encode()
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        aux_response = self.xblock.savestudentanswers(request)
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': 11,
+                            'com': 'comentario121'}
+        context_staff = {'id': self.staff_user.id,
+                            'username': self.staff_user.username,
+                            'correo': self.staff_user.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], True)
+        self.assertEqual(response['calificado'], 1)
+        self.assertEqual(response['lista_alumnos'][0], context_staff)
+        self.assertEqual(response['lista_alumnos'][1], context_student)
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_student_view_student_with_data(self, _):
+        """
+            Verify context in student_view student user with data
+        """
+        from lms.djangoapps.courseware.models import StudentModule
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121"})
+        request.body = data.encode()
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        aux_response = self.xblock.savestudentanswers(request)
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '11',
+                            'com': 'comentario121'}
+        self.xblock.xmodule_runtime.user_is_staff = False
+        self.xblock.scope_ids.user_id = self.student.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], False)
+        self.assertEqual(response['comentario'], 'comentario121')
+        self.assertEqual(response['puntaje'], 11)
+
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_staff_user(self, _):
         """

@@ -186,7 +186,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         if student_modules:
             all_modules = {}
             for module in student_modules:
-                all_modules[str(module.student_id)] = json.loads(module.state)
+                all_modules[module.student_id] = json.loads(module.state)
             return all_modules
         return {}
 
@@ -255,6 +255,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             courseenrollment__is_active=1
         ).order_by('username').values('id', 'username', 'email')
         filter_all_sub = {}
+        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, 'problem'))
         for student_item, submission, score in all_submission:
             filter_all_sub[student_item['student_id']] = score['points_earned']
         context = {'xblock': self}
@@ -274,6 +275,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 com = ''
                 if a['id'] in states:
                     if 'comment' in states[a['id']]:
+                        state = states[a['id']]
                         com = state['comment']
                 lista_alumnos.append({'id': a['id'],
                                       'username': a['username'],
