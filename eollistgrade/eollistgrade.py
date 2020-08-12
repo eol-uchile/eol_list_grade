@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 
 def _(text): return text
 
+XBLOCK_TYPE = "eollistgrade"
 
 def reify(meth):
     """
@@ -138,7 +139,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             "student_id": student_id,
             "course_id": self.block_course_id,
             "item_id": self.block_id,
-            "item_type": 'problem',
+            "item_type": XBLOCK_TYPE,
         }
 
     def get_score(self, student_id=None):
@@ -255,7 +256,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             courseenrollment__is_active=1
         ).order_by('username').values('id', 'username', 'email')
         filter_all_sub = {}
-        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, 'problem'))
+        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
         for student_item, submission, score in all_submission:
             filter_all_sub[student_item['student_id']] = score['points_earned']
         context = {'xblock': self}
@@ -354,7 +355,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 'student_id': anonymous_user_id,
                 'course_id': self.block_course_id,
                 'item_id': self.block_id,
-                'item_type': 'problem'
+                'item_type': XBLOCK_TYPE
             }
 
             submission = self.get_submission(anonymous_user_id)
@@ -400,7 +401,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                     'student_id': anonymous_user_id,
                     'course_id': self.block_course_id,
                     'item_id': self.block_id,
-                    'item_type': 'problem'
+                    'item_type': XBLOCK_TYPE
                 }
                 submission = self.get_submission(anonymous_user_id)
                 if submission:
