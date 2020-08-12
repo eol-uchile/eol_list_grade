@@ -1,7 +1,6 @@
 """
 Module To Test EolListGrade XBlock
 """
-from openedx.core.lib.tests.tools import assert_true
 
 from django.test import TestCase, Client
 from mock import MagicMock, Mock, patch
@@ -97,30 +96,68 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
     def test_validate_field_data(self):
         """
-        Reviso si se creo bien el xblock por defecto.
+            Verify if default xblock is created correctly
         """
         self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
         self.assertEqual(self.xblock.puntajemax, 100)
 
     def test_edit_block_studio(self):
         """
-        Reviso que este funcionando el submit studio edits
+            Verify submit studio edits is working
         """
         request = TestRequest()
         request.method = 'POST'
         self.xblock.xmodule_runtime.user_is_staff = True
         data = json.dumps({'display_name': 'testname', "puntajemax": '200'})
-        request.body = data
+        request.body = data.encode()
         response = self.xblock.studio_submit(request)
         self.assertEqual(self.xblock.display_name, 'testname')
         self.assertEqual(self.xblock.puntajemax, 200)
 
+    def test_student_view_staff(self):
+        """
+            Verify context in student_view staff user
+        """
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '',
+                            'com': ''}
+        context_staff = {'id': self.staff_user.id,
+                            'username': self.staff_user.username,
+                            'correo': self.staff_user.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], True)
+        self.assertEqual(response['calificado'], 0)
+        self.assertEqual(response['lista_alumnos'][0], context_staff)
+        self.assertEqual(response['lista_alumnos'][1], context_student)
+
+    def test_student_view_student(self):
+        """
+            Verify context in student_view student user
+        """
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = False
+        self.xblock.scope_ids.user_id = self.student.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], False)
+        self.assertEqual(response['comentario'], '')
+        self.assertEqual(response['puntaje'], '')
+
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_save_staff_user(self, _):
+    def test_student_view_staff_with_data(self, _):
         """
-        Checks the student view for student specific instance variables.
+            Verify context in student_view staff user with data
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -129,7 +166,83 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        aux_response = self.xblock.savestudentanswers(request)
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': 11,
+                            'com': 'comentario121'}
+        context_staff = {'id': self.staff_user.id,
+                            'username': self.staff_user.username,
+                            'correo': self.staff_user.email,
+                            'pun': '',
+                            'com': ''}
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], True)
+        self.assertEqual(response['calificado'], 1)
+        self.assertEqual(response['lista_alumnos'][0], context_staff)
+        self.assertEqual(response['lista_alumnos'][1], context_student)
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_student_view_student_with_data(self, _):
+        """
+            Verify context in student_view student user with data
+        """
+        from lms.djangoapps.courseware.models import StudentModule
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121"})
+        request.body = data.encode()
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+
+        aux_response = self.xblock.savestudentanswers(request)
+        context_student = {'id': self.student.id,
+                            'username': self.student.username,
+                            'correo': self.student.email,
+                            'pun': '11',
+                            'com': 'comentario121'}
+        self.xblock.xmodule_runtime.user_is_staff = False
+        self.xblock.scope_ids.user_id = self.student.id
+        response = self.xblock.get_context()
+        self.assertEqual(response['is_course_staff'], False)
+        self.assertEqual(response['comentario'], 'comentario121')
+        self.assertEqual(response['puntaje'], 11)
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_save_staff_user(self, _):
+        """
+          Save score and comment by staff user
+        """
+        from lms.djangoapps.courseware.models import StudentModule
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "puntaje": "11",
+                           "comentario": "comentario121"})
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -140,15 +253,15 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            state.state,
-            '{"comment": "comentario121", "student_score": 11}')
+            json.loads(state.state),
+            json.loads('{"comment": "comentario121", "student_score": 11}'))
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
 
     def test_save_student_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by student user
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -157,7 +270,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -166,15 +279,15 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         module.save()
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
-        self.assertEqual(state.state, '{}')
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_saveall_staff_user(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment of all students by staff user
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -182,7 +295,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         datos = [[self.student.id, "11", "com1"],
                  [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos})
-        request.body = data
+        request.body = data.encode()
 
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -203,19 +316,19 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         state_staff = StudentModule.objects.get(pk=module_staff.id)
 
         self.assertEqual(
-            state.state,
-            '{"comment": "com1", "student_score": 11}')
+            json.loads(state.state),
+            json.loads('{"comment": "com1", "student_score": 11}'))
         self.assertEqual(
-            state_staff.state,
-            '{"comment": "com2", "student_score": 22}')
+            json.loads(state_staff.state),
+            json.loads('{"comment": "com2", "student_score": 22}'))
         self.assertEqual(self.xblock.get_score(self.student.id), 11)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), 22)
 
     def test_saveall_student_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment of all students by student user
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -224,7 +337,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         datos = [[self.student.id, "11", "com1"],
                  [self.staff_user.id, "22", "com2"]]
         data = json.dumps({"data": datos})
-        request.body = data
+        request.body = data.encode()
 
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -243,16 +356,16 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         response = self.xblock.savestudentanswersall(request)
         state = StudentModule.objects.get(pk=module.id)
         state_staff = StudentModule.objects.get(pk=module_staff.id)
-        self.assertEqual(state.state, '{}')
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
         self.assertEqual(state_staff.state, '{}')
         self.assertEqual(self.xblock.get_score(self.student.id), None)
         self.assertEqual(self.xblock.get_score(self.staff_user.id), None)
 
     def test_wrong_data_staff_user(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with wrong score
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -261,7 +374,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "asd",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -270,15 +383,15 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         module.save()
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
-        self.assertEqual(state.state, '{}')
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_student_score_max_score(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score = max score
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -287,7 +400,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": self.xblock.puntajemax,
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -297,16 +410,16 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            state.state,
-            '{"comment": "comentario121", "student_score": 100}')
+            json.loads(state.state),
+            json.loads('{"comment": "comentario121", "student_score": 100}'))
         self.assertEqual(self.xblock.get_score(self.student.id), 100)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_save_student_score_min_score(self, _):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score = 0
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -315,7 +428,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "0",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -325,15 +438,15 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
         self.assertEqual(
-            state.state,
-            '{"comment": "comentario121", "student_score": 0}')
+            json.loads(state.state),
+            json.loads('{"comment": "comentario121", "student_score": 0}'))
         self.assertEqual(self.xblock.get_score(self.student.id), 0)
 
     def test_save_student_score_min_score_wrong(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score < 0
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -342,7 +455,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "-1",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -351,14 +464,14 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         module.save()
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
-        self.assertEqual(state.state, '{}')
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
         self.assertEqual(self.xblock.get_score(self.student.id), None)
 
     def test_save_student_score_max_score_wrong(self):
         """
-        Checks the student view for student specific instance variables.
+          Save score and comment by staff user with score > max score
         """
-        from courseware.models import StudentModule
+        from lms.djangoapps.courseware.models import StudentModule
         request = TestRequest()
         request.method = 'POST'
 
@@ -367,7 +480,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data = json.dumps({"id": self.student.id,
                            "puntaje": "101",
                            "comentario": "comentario121"})
-        request.body = data
+        request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
             student_id=self.student.id,
@@ -376,5 +489,5 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         module.save()
         response = self.xblock.savestudentanswers(request)
         state = StudentModule.objects.get(pk=module.id)
-        self.assertEqual(state.state, '{}')
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
         self.assertEqual(self.xblock.get_score(self.student.id), None)

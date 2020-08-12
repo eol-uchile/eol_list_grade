@@ -18,7 +18,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from django.contrib.auth.models import User
 from submissions import api as submissions_api
 from student.models import user_by_anonymous_id
-from courseware.models import StudentModule
+from lms.djangoapps.courseware.models import StudentModule
 
 log = logging.getLogger(__name__)
 # Make '_' a no-op so we can scrape strings
@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 
 def _(text): return text
 
+XBLOCK_TYPE = "eollistgrade"
 
 def reify(meth):
     """
@@ -88,6 +89,15 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         return getattr(self.xmodule_runtime, 'user_is_staff', False)
 
+    def get_anonymous_id(self, student_id=None):
+        """
+            Return anonymous id
+        """
+        from student.models import anonymous_id_for_user
+
+        course_key = self.course_id
+        return anonymous_id_for_user(User.objects.get(id=student_id), course_key)
+
     def is_instructor(self):
         # pylint: disable=no-member
         """
@@ -129,30 +139,26 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             "student_id": student_id,
             "course_id": self.block_course_id,
             "item_id": self.block_id,
-            "item_type": 'problem',
+            "item_type": XBLOCK_TYPE,
         }
 
     def get_score(self, student_id=None):
         """
         Return student's current score.
         """
-        from student.models import anonymous_id_for_user
-        
-        course_key = self.course_id
-        anonymous_user_id = anonymous_id_for_user(User.objects.get(id=student_id), course_key)
+        anonymous_user_id = self.get_anonymous_id(student_id)
         score = submissions_api.get_score(
             self.get_student_item_dict(anonymous_user_id)
         )
         if score:
             return score['points_earned']
         else:
-            None
+            return None
 
     def get_com(self, student_id, course_key, block_key):
         """
         Return student's comments
         """
-
         try:
             student_module = StudentModule.objects.get(
                 student_id=student_id,
@@ -164,6 +170,25 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
         if student_module:
             return json.loads(student_module.state)
+        return {}
+
+    def get_all_student_module(self, course_key, block_key):
+        """
+        Return student's comments
+        """
+        try:
+            student_modules = StudentModule.objects.filter(
+                course_id=self.course_id,
+                module_state_key=self.location
+            )
+        except StudentModule.DoesNotExist:
+            student_modules = None
+
+        if student_modules:
+            all_modules = {}
+            for module in student_modules:
+                all_modules[module.student_id] = json.loads(module.state)
+            return all_modules
         return {}
 
     def get_or_create_student_module(self, student_id):
@@ -225,27 +250,35 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return frag
 
     def get_context(self):
-        
         course_key = self.course_id
         enrolled_students = User.objects.filter(
             courseenrollment__course_id=course_key,
             courseenrollment__is_active=1
         ).order_by('username').values('id', 'username', 'email')
+        filter_all_sub = {}
+        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
+        for student_item, submission, score in all_submission:
+            filter_all_sub[student_item['student_id']] = score['points_earned']
         context = {'xblock': self}
         lista_alumnos = []
         calificado = 0
         if self.show_staff_grading_interface():
             for a in enrolled_students:
                 p = ''
-                aux_pun = self.get_score(a['id'])
-                if aux_pun is not None and aux_pun >= 0:
-                    p = aux_pun
-                    calificado = calificado + 1
+                anonymous_id = self.get_anonymous_id(a['id'])
+                if anonymous_id in filter_all_sub:
+                    if filter_all_sub[anonymous_id] is not None and filter_all_sub[anonymous_id] >= 0:
+                        p = filter_all_sub[anonymous_id]
+                        calificado = calificado + 1
 
-                state = self.get_com(a['id'], course_key, self.block_id)
+
+                states = self.get_all_student_module(course_key, self.block_id)
+                
                 com = ''
-                if 'comment' in state:
-                    com = state['comment']
+                if a['id'] in states:
+                    if 'comment' in states[a['id']]:
+                        state = states[a['id']]
+                        com = state['comment']
                 lista_alumnos.append({'id': a['id'],
                                       'username': a['username'],
                                       'correo': a['email'],
@@ -276,12 +309,18 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         return context
 
     def validar_datos(self, data):
+        """
+            Verify if data is valid per student
+        """
         return str(
             data.get('puntaje')).lstrip('+').isdigit() and int(
             data.get('puntaje')) >= 0 and int(
             data.get('puntaje')) <= self.puntajemax
 
     def validar_datos_all(self, data):
+        """
+            Verify if all students data is valid
+        """
         score = True
         for fila in data.get('data'):
             if not str(fila[1]).lstrip('+').isdigit() or int(fila[1]
@@ -295,6 +334,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
+        """
+            Save the score and comment per student
+        """
         valida = self.validar_datos(data)
         if self.show_staff_grading_interface() and valida:
             calificado = True
@@ -310,14 +352,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             
             course_key = self.course_id
             anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(data.get('id'))), course_key)
-            log.error(course_key)
             student_item = {
                 'student_id': anonymous_user_id,
                 'course_id': self.block_course_id,
                 'item_id': self.block_id,
-                'item_type': 'problem'
+                'item_type': XBLOCK_TYPE
             }
-            
+
             submission = self.get_submission(anonymous_user_id)
             if submission:
                 submissions_api.set_score(
@@ -338,6 +379,9 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     @XBlock.json_handler
     def savestudentanswersall(self, data, suffix=''):
+        """
+            Save the score and comment of all students
+        """
         valida = self.validar_datos_all(data)
         if self.show_staff_grading_interface() and valida:
             for fila in data.get('data'):
@@ -358,7 +402,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                     'student_id': anonymous_user_id,
                     'course_id': self.block_course_id,
                     'item_id': self.block_id,
-                    'item_type': 'problem'
+                    'item_type': XBLOCK_TYPE
                 }
                 submission = self.get_submission(anonymous_user_id)
                 if submission:
