@@ -271,6 +271,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                         p = filter_all_sub[anonymous_id]
                         calificado = calificado + 1
 
+
                 states = self.get_all_student_module(course_key, self.block_id)
                 
                 com = ''
