@@ -251,19 +251,20 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     def get_context(self):
         course_key = self.course_id
-        enrolled_students = User.objects.filter(
-            courseenrollment__course_id=course_key,
-            courseenrollment__is_active=1
-        ).order_by('username').values('id', 'username', 'email')
-        filter_all_sub = {}
-        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
-        for student_item, submission, score in all_submission:
-            if self.block_id == student_item['item_id']:
-                filter_all_sub[student_item['student_id']] = score['points_earned']
         context = {'xblock': self, 'location': str(self.location).split('@')[-1]}
-        lista_alumnos = []
-        calificado = 0
         if self.show_staff_grading_interface():
+            enrolled_students = User.objects.filter(
+                courseenrollment__course_id=course_key,
+                courseenrollment__is_active=1
+            ).order_by('username').values('id', 'username', 'email')
+            filter_all_sub = {}
+            all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
+            for student_item, submission, score in all_submission:
+                if self.block_id == student_item['item_id']:
+                    filter_all_sub[student_item['student_id']] = score['points_earned']
+            
+            lista_alumnos = []
+            calificado = 0
             states = self.get_all_student_module(course_key, self.block_id)
             for a in enrolled_students:
                 p = ''
