@@ -43,9 +43,7 @@ function EolListGradeXBlock(runtime, element) {
             .leanModal()
             
     });
-
-    $('tr input[type=button]').live('click', function () {        
-       
+    $(element).find('tr input[type=button]').live('click', function(e) {
         var fila = $(this).closest('tr')
         var colum = fila[0].cells
         var id_student = colum[0].textContent
@@ -68,14 +66,10 @@ function EolListGradeXBlock(runtime, element) {
             $element.find('#eollistgrade_label')[0].textContent = ""
         }
     });
-
-    $('input[name=cerrar-eollistgrade]').live('click', function () {        
-        $element.find('#grade-1-eollistgrade').hide();
-        $("#lean_overlay").hide();
-        
-    });    
-
-    $('input[name=sendall]').live('click', function () {        
+    $(element).find('input[name=cerrar-eollistgrade]').live('click', function() {
+        $("#lean_overlay").click();
+    });
+    $(element).find('input[name=sendall]').live('click', function() {
         var tabla = $element.find('#tabla-alumnos')[0].children;        
         var check = true;
         var data =  new Array();

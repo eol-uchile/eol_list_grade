@@ -258,11 +258,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         filter_all_sub = {}
         all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
         for student_item, submission, score in all_submission:
-            filter_all_sub[student_item['student_id']] = score['points_earned']
-        context = {'xblock': self}
+            if self.block_id == student_item['item_id']:
+                filter_all_sub[student_item['student_id']] = score['points_earned']
+        context = {'xblock': self, 'location': str(self.location).split('@')[-1]}
         lista_alumnos = []
         calificado = 0
         if self.show_staff_grading_interface():
+            states = self.get_all_student_module(course_key, self.block_id)
             for a in enrolled_students:
                 p = ''
                 anonymous_id = self.get_anonymous_id(a['id'])
@@ -271,9 +273,6 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                         p = filter_all_sub[anonymous_id]
                         calificado = calificado + 1
 
-
-                states = self.get_all_student_module(course_key, self.block_id)
-                
                 com = ''
                 if a['id'] in states:
                     if 'comment' in states[a['id']]:
@@ -397,7 +396,6 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 
                 course_key = self.course_id
                 anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(fila[0])), course_key)
-                log.error(course_key)
                 student_item = {
                     'student_id': anonymous_user_id,
                     'course_id': self.block_course_id,
