@@ -98,7 +98,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
             Verify if default xblock is created correctly
         """
-        self.assertEqual(self.xblock.display_name, 'Eol List Grade XBlock')
+        self.assertEqual(self.xblock.display_name, 'Notas Manuales')
         self.assertEqual(self.xblock.puntajemax, 100)
 
     def test_edit_block_studio(self):

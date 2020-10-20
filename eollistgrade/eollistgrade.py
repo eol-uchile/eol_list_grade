@@ -49,7 +49,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
     display_name = String(
         display_name=_("Display Name"),
         help=_("Display name for this module"),
-        default="Eol List Grade XBlock",
+        default="Notas Manuales",
         scope=Scope.settings,
     )
     puntajemax = Integer(
