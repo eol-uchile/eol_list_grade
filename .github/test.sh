@@ -2,12 +2,12 @@
 
 pip install -e /openedx/requirements/eol-list-grade
 
-cd /openedx/requirements/eol-list-grade/eollistgrade
+cd /openedx/requirements/eol-list-grade
 cp /openedx/edx-platform/setup.cfg .
 mkdir test_root
 cd test_root/
 ln -s /openedx/staticfiles .
 
-cd /openedx/requirements/eol-list-grade/eollistgrade
+cd /openedx/requirements/eol-list-grade
 
-DJANGO_SETTINGS_MODULE=lms.envs.test EDXAPP_TEST_MONGO_HOST=mongodb pytest tests.py
+DJANGO_SETTINGS_MODULE=lms.envs.test EDXAPP_TEST_MONGO_HOST=mongodb pytest eollistgrade/tests.py
