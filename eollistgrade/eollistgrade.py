@@ -252,10 +252,11 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             "static/js/src/eollistgrade.js"))
         settings = {
             'puntajemax': str(self.puntajemax),
-            'location': str(self.location).split('@')[-1],
-            'n_student': len(context['lista_alumnos']),
-            'n_team': len(context['lista_equipo'])
+            'location': str(self.location).split('@')[-1]
         }
+        if context['is_course_staff']:
+            settings['n_student'] = len(context['lista_alumnos'])
+            settings['n_team'] = len(context['n_team'])
         frag.initialize_js('EolListGradeXBlock', json_args=settings)
         return frag
 
