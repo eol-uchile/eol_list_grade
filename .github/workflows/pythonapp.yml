@@ -12,4 +12,4 @@ jobs:
     - name: Run Tests
       run: |        
         cd .github/
-        docker-compose run lms /openedx/requirements/eol-list-grade/.github/test.sh
+        docker-compose run lms /openedx/requirements/eol_list_grade/.github/test.sh

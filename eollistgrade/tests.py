@@ -132,9 +132,11 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.scope_ids.user_id = self.staff_user.id
         response = self.xblock.get_context()
         self.assertEqual(response['is_course_staff'], True)
-        self.assertEqual(response['calificado'], 0)
-        self.assertEqual(response['lista_alumnos'][0], context_staff)
-        self.assertEqual(response['lista_alumnos'][1], context_student)
+        self.assertEqual(response['calificado_total'], 0)
+        self.assertEqual(response['calificado_alumnos'], 0)
+        self.assertEqual(response['calificado_equipo'], 0)
+        self.assertEqual(response['lista_alumnos'][0], context_student)
+        self.assertEqual(response['lista_equipo'][0], context_staff)
 
     def test_student_view_student(self):
         """
@@ -165,7 +167,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -189,9 +192,11 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.scope_ids.user_id = self.staff_user.id
         response = self.xblock.get_context()
         self.assertEqual(response['is_course_staff'], True)
-        self.assertEqual(response['calificado'], 1)
-        self.assertEqual(response['lista_alumnos'][0], context_staff)
-        self.assertEqual(response['lista_alumnos'][1], context_student)
+        self.assertEqual(response['calificado_total'], 1)
+        self.assertEqual(response['calificado_alumnos'], 1)
+        self.assertEqual(response['calificado_equipo'], 0)
+        self.assertEqual(response['lista_alumnos'][0], context_student)
+        self.assertEqual(response['lista_equipo'][0], context_staff)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     def test_student_view_student_with_data(self, _):
@@ -206,7 +211,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -241,7 +247,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -269,7 +276,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "11",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -373,7 +381,34 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "asd",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
+        request.body = data.encode()
+        module = StudentModule(
+            module_state_key=self.xblock.location,
+            student_id=self.student.id,
+            course_id=self.course.id,
+            state='{}')
+        module.save()
+        response = self.xblock.savestudentanswers(request)
+        data_response = json.loads(response._app_iter[0].decode())
+        state = StudentModule.objects.get(pk=module.id)
+        self.assertEqual(json.loads(state.state), json.loads('{}'))
+        self.assertEqual(self.xblock.get_score(self.student.id), None)
+        self.assertEqual(data_response['result'], 'error')
+
+    def test_wrong_data_staff_user_2(self):
+        """
+          Save score and comment by staff user with wrong params
+        """
+        from lms.djangoapps.courseware.models import StudentModule
+        request = TestRequest()
+        request.method = 'POST'
+
+        self.xblock.xmodule_runtime.user_is_staff = True
+
+        data = json.dumps({"id": self.student.id,
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -399,7 +434,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": self.xblock.puntajemax,
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -427,7 +463,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "0",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -454,7 +491,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "-1",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,
@@ -479,7 +517,8 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         data = json.dumps({"id": self.student.id,
                            "puntaje": "101",
-                           "comentario": "comentario121"})
+                           "comentario": "comentario121",
+                           "role": 'estudiante'})
         request.body = data.encode()
         module = StudentModule(
             module_state_key=self.xblock.location,

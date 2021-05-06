@@ -1,107 +1,90 @@
-
-.eollistgrade_block .personaje{
-    width: 130px;
-    height: 100%;
-    background-repeat: no-repeat;
-    background-position: center; 
+.eollistgrade_block ol, .eollistgrade_block li{
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font: inherit;
+    font-size: 100%;
+    vertical-align: baseline;
+}
+.eollistgrade_block .ui-loading, .eollistgrade_block span{
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font-size: 100%;
+    vertical-align: baseline;
 }
 
-.eollistgrade_block .Izquierda ,
-.eollistgrade_block .Derecha{
-    position: relative;
-    width:800px;
-    color:#000;
-    min-height: 115px;
-    padding:20px 0;
-    margin: auto;
-    box-sizing: border-box; 
+.eollistgrade_block p:last-child {
+    margin-bottom: 0;
+    text-align: center;
+}
+.eollistgrade_block ol {
+    list-style: none;
+}
+.eollistgrade_block ol:last-child {
+    margin-bottom: 0;
+}
+.eollistgrade_block li {
+    border: 1px solid #919191;;
+    margin-bottom: 4px;
+}
+.eollistgrade_block .block-tree .outline-button {
+    display: flex;
+    padding: 10px 0 10px 2px;
+    border: none;
+    width: 100%;
+    text-align: left;
+    margin: 0;
+    background: none;
+    cursor: pointer;
+    border-bottom: 1px solid #e7e7e7 !important;
+    background-color: aliceblue !important;
+}
+.eollistgrade_block .truncate {
+    max-width: 90%;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 5px;
+    display: inline-flex;
+    margin-right: 12px;
+    max-width: 100%;
+}
+.eollistgrade_block .block-tree .outline-button .fa {
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    color: #0075b4;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+.eollistgrade_block .fa-chevron-right:before {
+    content: "\f054";
 }
 
-.eollistgrade_block .Izquierda .personaje{
-    left: 10px;
-    position: absolute;
-    top:0;
-    z-index:5;
+.eollistgrade_block .fa-rotate-90 {
+    -webkit-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
 }
 
-.eollistgrade_block .Derecha .personaje{
-    right: 10px;
-    position: absolute;
-    top:0;
-    z-index:5;
+:root .fa-rotate-90, :root .fa-rotate-180, :root .fa-rotate-270, :root .fa-flip-horizontal, :root .fa-flip-vertical {
+    filter: none;
 }
-
-.eollistgrade_block .dialogo p {
-    margin-bottom: 0 !important;
+.eollistgrade_block .fa {
+    color: #0075b4;
 }
-
-.eollistgrade_block .Izquierda .dialogo{
-    left: 180px; 
-    display:table; 
-    max-width: 505px;
+.eollistgrade_block .fa-chevron-right:before {
+    content: "\f054";
 }
-
-.eollistgrade_block .Derecha .dialogo{
-    right: 180px;
-    float: right;
-    text-align: right; 
-    display:table;
-    max-width: 505px;
-}
-
-.eollistgrade_block .Izquierda .dialogo,
-.eollistgrade_block .Derecha .dialogo
-{
-    position: relative;
-    min-width: 200px;
-    box-sizing: border-box;
-    padding: 30px;
-    border-radius: 15px;
-    min-height: 78px;
-	display: table-cell; vertical-align: middle;
-	 width: -webkit-max-content;
-	 width: -moz-max-content;
-	 width: max-content; 
-}
-.eollistgrade_block .Izquierda .cola{
-    left: 133px;
-    background-image: url(https://static.cmm.uchile.cl/global2/cola_izq.png);
-}
-
-.eollistgrade_block .Derecha .cola{
-    right: 133px;
-    background-image: url(https://static.cmm.uchile.cl/global2/cola_der.png);
-}
-
-.eollistgrade_block .Izquierda .cola,
-.eollistgrade_block .Derecha .cola{
-    position: absolute;
-    box-sizing: border-box;
-    top:35px;
-    width: 47px;
-    height: 28px;
-    z-index: 4;
-}
-
-/* CSS for Media theme */
-
-.eollistgrade_block.Media .Izquierda .dialogo,
-.eollistgrade_block.Media .Derecha .dialogo
-{
-    border-radius: 30px;
-}
-
-.eollistgrade_block.Media .Izquierda .cola,
-.eollistgrade_block.Media .Derecha .cola{
-    top:47px;
-}
-table {
+.eollistgrade_block table {
     border-collapse: collapse;
   }
   
-table, th, td {
+.eollistgrade_block table, .eollistgrade_block th, .eollistgrade_block td {
     border: 1px solid black;
+    vertical-align: middle;
 }
 .eollistgrade_block .modal2{   
     height: auto !important; 
@@ -159,5 +142,18 @@ table, th, td {
     z-index: 2;
   text-decoration: none;
 }
-
+.eollistgrade_block .content-info{
+    height: 90%;
+    min-height: 100px;
+    max-height: 650px;
+    overflow-y: auto;
+}
+.eollistgrade_block .is-hidden {
+    display: none;
+}
 .eollistgrade_block .modal_close:hover {color: #dadada; transition: .3s ease-in-out;}
+
+.eollistgrade_block p{
+    font-size: 100% !important;
+    line-height: inherit !important;
+}

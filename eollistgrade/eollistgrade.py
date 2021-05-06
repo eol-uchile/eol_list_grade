@@ -14,7 +14,7 @@ from xblock.fragment import Fragment
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from lms.djangoapps.courseware.courses import get_course_with_access
-
+from common.djangoapps.student.models import CourseAccessRole
 from django.contrib.auth.models import User
 from submissions import api as submissions_api
 from student.models import user_by_anonymous_id
@@ -191,6 +191,10 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             return all_modules
         return {}
 
+    def get_user_roles(self, course_key):
+        user_roles_model = CourseAccessRole.objects.filter(course_id=course_key).values('user__id')
+        return [x['user__id'] for x in user_roles_model]
+
     def get_or_create_student_module(self, student_id):
         """
         Gets or creates a StudentModule for the given user for this block
@@ -246,7 +250,13 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         frag.add_css(self.resource_string("static/css/eollistgrade.css"))
         frag.add_javascript(self.resource_string(
             "static/js/src/eollistgrade.js"))
-        frag.initialize_js('EolListGradeXBlock')
+        settings = {
+            'puntajemax': str(self.puntajemax),
+            'location': str(self.location).split('@')[-1],
+            'n_student': len(context['lista_alumnos']),
+            'n_team': len(context['lista_equipo'])
+        }
+        frag.initialize_js('EolListGradeXBlock', json_args=settings)
         return frag
 
     def get_context(self):
@@ -256,15 +266,19 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             enrolled_students = User.objects.filter(
                 courseenrollment__course_id=course_key,
                 courseenrollment__is_active=1
-            ).order_by('username').values('id', 'username', 'email')
+            ).order_by('username').values('id', 'username', 'email', 'courseenrollment__mode')
             filter_all_sub = {}
+            user_roles = self.get_user_roles(course_key)
             all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
             for student_item, submission, score in all_submission:
                 if self.block_id == student_item['item_id']:
                     filter_all_sub[student_item['student_id']] = score['points_earned']
             
             lista_alumnos = []
-            calificado = 0
+            lista_equipo = []
+            calificado_total = 0
+            calificado_alumnos = 0
+            calificado_equipo = 0
             states = self.get_all_student_module(course_key, self.block_id)
             for a in enrolled_students:
                 p = ''
@@ -272,21 +286,34 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 if anonymous_id in filter_all_sub:
                     if filter_all_sub[anonymous_id] is not None and filter_all_sub[anonymous_id] >= 0:
                         p = filter_all_sub[anonymous_id]
-                        calificado = calificado + 1
-
+                        calificado_total = calificado_total + 1
+                        if a['id'] in user_roles:
+                            calificado_equipo = calificado_equipo + 1
+                        else:
+                            calificado_alumnos = calificado_alumnos + 1
                 com = ''
                 if a['id'] in states:
                     if 'comment' in states[a['id']]:
                         state = states[a['id']]
                         com = state['comment']
-                lista_alumnos.append({'id': a['id'],
-                                      'username': a['username'],
-                                      'correo': a['email'],
-                                      'pun': p,
-                                      'com': com})
-
+                if a['id'] in user_roles:
+                    lista_equipo.append({'id': a['id'],
+                                        'username': a['username'],
+                                        'correo': a['email'],
+                                        'pun': p,
+                                        'com': com})
+                else:
+                    lista_alumnos.append({'id': a['id'],
+                                        'username': a['username'],
+                                        'correo': a['email'],
+                                        'pun': p,
+                                        'com': com})
             context['lista_alumnos'] = lista_alumnos
-            context['calificado'] = calificado
+            context['lista_equipo'] = lista_equipo
+            context['total_enrolled'] = len(enrolled_students)
+            context['calificado_total'] = calificado_total
+            context['calificado_alumnos'] = calificado_alumnos
+            context['calificado_equipo'] = calificado_equipo
             context['category'] = type(self).__name__
             context['is_course_staff'] = True
         else:
@@ -312,10 +339,10 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
             Verify if data is valid per student
         """
-        return str(
+        return 'puntaje' in data and 'role' in data and 'id' in data and 'comentario' in data and str(
             data.get('puntaje')).lstrip('+').isdigit() and int(
             data.get('puntaje')) >= 0 and int(
-            data.get('puntaje')) <= self.puntajemax
+            data.get('puntaje')) <= self.puntajemax and data.get('role') in ['equipo', 'estudiante']
 
     def validar_datos_all(self, data):
         """
@@ -373,7 +400,8 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             return {
                 'result': 'success',
                 'id': data.get('id'),
-                'calificado': calificado}
+                'calificado': calificado,
+                'role': data.get('role')}
 
         return {'result': 'error'}
 
