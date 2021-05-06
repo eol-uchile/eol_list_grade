@@ -266,7 +266,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             enrolled_students = User.objects.filter(
                 courseenrollment__course_id=course_key,
                 courseenrollment__is_active=1
-            ).order_by('username').values('id', 'username', 'email', 'courseenrollment__mode')
+            ).order_by('username').values('id', 'username', 'email')
             filter_all_sub = {}
             user_roles = self.get_user_roles(course_key)
             all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
