@@ -16,7 +16,7 @@ services:
   lms:
     image: eoluchile/edx-platform:testing-koa
     volumes:
-      - ../:/openedx/requirements/eol-list-grade
+      - ../:/openedx/requirements/eol_list_grade
     depends_on:
       - memcached
       - mongodb
