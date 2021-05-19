@@ -85,6 +85,7 @@ function EolListGradeXBlock(runtime, element, settings) {
             $element.find('#eollistgrade_label')[0].textContent = "";
             $(element).find('#eollistgrade_label').hide();
             $(element).find('#eollistgrade_wrong_label').show();
+            $(element).find('#ui-loading-eollistgrade-load-footer').hide();
         }
     });
     $(element).find('input[name=cerrar-eollistgrade]').live('click', function() {
@@ -134,8 +135,11 @@ function EolListGradeXBlock(runtime, element, settings) {
             });
         }
         else{
-            $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos"
-            $element.find('#eollistgrade_label')[0].textContent = "" 
+            $element.find('#eollistgrade_wrong_label')[0].textContent = "Revise los campos si estan correctos";
+            $element.find('#eollistgrade_label')[0].textContent = "";
+            $(element).find('#ui-loading-eollistgrade-load-footer').hide();
+            $(element).find('#eollistgrade_label').hide();
+            $(element).find('#eollistgrade_wrong_label').show();
         }
     });
 
