@@ -17,7 +17,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from common.djangoapps.student.models import CourseAccessRole
 from django.contrib.auth.models import User
 from submissions import api as submissions_api
-from student.models import user_by_anonymous_id
+from common.djangoapps.student.models import user_by_anonymous_id
 from lms.djangoapps.courseware.models import StudentModule
 
 log = logging.getLogger(__name__)

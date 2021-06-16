@@ -5,15 +5,15 @@ Module To Test EolListGrade XBlock
 from django.test import TestCase, Client
 from mock import MagicMock, Mock, patch
 from django.contrib.auth.models import User
-from util.testing import UrlResetMixin
+from common.djangoapps.util.testing import UrlResetMixin
 from opaque_keys.edx.locations import Location
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
-from student.roles import CourseStaffRole
+from common.djangoapps.student.roles import CourseStaffRole
 from django.test.client import RequestFactory
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
-from student.tests.factories import UserFactory, CourseEnrollmentFactory
+from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from xblock.field_data import DictFieldData
 from opaque_keys.edx.locator import CourseLocator
