@@ -93,7 +93,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
             Return anonymous id
         """
-        from student.models import anonymous_id_for_user
+        from common.djangoapps.student.models import anonymous_id_for_user
 
         course_key = self.course_id
         return anonymous_id_for_user(User.objects.get(id=student_id), course_key)
@@ -376,7 +376,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             student_module.state = json.dumps(state)
             student_module.save()
             
-            from student.models import anonymous_id_for_user
+            from common.djangoapps.student.models import anonymous_id_for_user
             
             course_key = self.course_id
             anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(data.get('id'))), course_key)
@@ -422,7 +422,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 student_module.state = json.dumps(state)
                 student_module.save()
 
-                from student.models import anonymous_id_for_user
+                from common.djangoapps.student.models import anonymous_id_for_user
                 
                 course_key = self.course_id
                 anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(fila[0])), course_key)

@@ -74,7 +74,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.xblock = self.make_an_xblock()
 
-        with patch('student.models.cc.User.save'):
+        with patch('common.djangoapps.student.models.cc.User.save'):
             # Create the student
             self.student = UserFactory(
                 username='student',
