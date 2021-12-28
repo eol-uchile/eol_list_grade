@@ -504,7 +504,10 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         wrong_data = []
         for row in csv_data:
             try:
-                user = User.objects.get(username=row[0])
+                user = User.objects.get(
+                    username=row[0], 
+                    courseenrollment__course_id=self.course_id,
+                    courseenrollment__is_active=1)
                 student_module = self.get_or_create_student_module(user.id)
                 state = json.loads(student_module.state)
                 if row[2] == '':

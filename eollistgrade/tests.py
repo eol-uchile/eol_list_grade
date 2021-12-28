@@ -80,6 +80,10 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
                 username='student',
                 password='test',
                 email='student@edx.org')
+            self.student_2 = UserFactory(
+                username='student_2',
+                password='test',
+                email='student2@edx.org')
             # Enroll the student in the course
             CourseEnrollmentFactory(
                 user=self.student, course_id=self.course.id)
@@ -643,6 +647,29 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(data['result'], 'success')
         self.assertEqual(data['errors'], '')
         self.assertEqual(data['wrong_data'], [['asdasdsad', self.student.email, '1', 'this is a comment']])
+        self.assertEqual(data['total_scored'], 0)
+
+    @patch('eollistgrade.eollistgrade.EolListGradeXBlock.file_to_csvreader')
+    def test_import_csv_wrong_data_2(self, csv_reader):
+        """
+            test import csv when csv have wrong data user isn't enrolled
+        """
+        mock_file_object = mock.Mock()
+        mock_file_object.configure_mock(name="file_name")
+        fields = {
+            "file": mock.Mock(file=mock_file_object),
+        }
+        csv_reader.return_value = [
+            [self.student_2.username, self.student_2.email, '1', 'this is a comment']
+            ]
+        self.xblock.is_manual = False
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        response = self.xblock.import_csv(mock.Mock(method="POST", params=fields))
+        data = response.json
+        self.assertEqual(data['result'], 'success')
+        self.assertEqual(data['errors'], '')
+        self.assertEqual(data['wrong_data'], [[self.student_2.username, self.student_2.email, '1', 'this is a comment']])
         self.assertEqual(data['total_scored'], 0)
 
     def test_export_csv_wrong_method(self):

@@ -15,7 +15,7 @@
       <li class="field comp-setting-entry is-set">
         <div class="wrapper-comp-setting">
           <label class="label setting-label" for="is_manual">Modo Calificación</label>
-          <select class="input setting-input" id="is_manual">
+          <select class="input setting-input" id="is_manual" style="background-color: white;">
             <option value="1" {% if xblock.is_manual %}selected{% endif %}>
               Manual
             </option>
@@ -24,7 +24,6 @@
             </option>
           </select>
         </div>
-        <span class="tip setting-help">Los estudiantes recibirán una notificación por correo electrónico al iniciar la transmisión. </span>
      </li>
     </ul>
     <div class="xblock-actions">
