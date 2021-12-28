@@ -21,6 +21,10 @@
     margin-bottom: 0;
     text-align: center;
 }
+.eollistgrade_block .row .col p:last-child {
+    margin-bottom: 1.41575em;
+    text-align: left;
+}
 .eollistgrade_block ol {
     list-style: none;
 }
@@ -28,7 +32,11 @@
     margin-bottom: 0;
 }
 .eollistgrade_block li {
-    border: 1px solid #919191;;
+    border: 1px solid #919191;
+    margin-bottom: 4px;
+}
+.eollistgrade_block .row .col li {
+    border: none;
     margin-bottom: 4px;
 }
 .eollistgrade_block .block-tree .outline-button {
@@ -151,6 +159,10 @@
 }
 .eollistgrade_block .is-hidden {
     display: none;
+}
+.eollistgrade_block .import-export {
+    padding-bottom: 5px;
+    padding-top: 5px;
 }
 .eollistgrade_block .modal_close:hover {color: #dadada; transition: .3s ease-in-out;}
 
