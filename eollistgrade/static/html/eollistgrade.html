@@ -1,115 +1,148 @@
 <div class="eollistgrade_block">
-   {% if is_course_staff %}   
-    <div class="wrap-instructor-info" style="display: block;">
-        <h2>{{xblock.display_name}}</h2></br>
-        <label style="cursor: default;">Estudiantes Calificados: <spin id="calificado_alumnos">{{calificado_alumnos}}</spin> de {{ lista_alumnos|length }}</label></br>
-        <label style="cursor: default;">Equipo Docente Calificados: <spin id="calificado_equipo">{{calificado_equipo}}</spin> de {{ lista_equipo|length }}</label></br>
-        <label style="cursor: default;">Total Calificados: <spin id="calificado_total">{{calificado_total}}</spin> de {{ total_enrolled }}</label></br>
-        <a class="button" id="grade-submissions-button"
-            href="#grade-1-eollistgrade-{{ location }}" style="margin-top: inherit;color: black;"> Calificaciones</a>        
-    </div>
-    
-    <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1-eollistgrade-{{ location }}" name="grade-1-eollistgrade" style="height: auto" tabindex="-1">
-        <div class="inner-wrapper" style="color: black; overflow: auto;text-align: center;">
-            <a class='modal_close' href="javascript:void(0);" onclick="$('#lean_overlay').click();"> <i class='fa fa-times'></i> </a>
-            <h2 style="text-align: center;"><span class="display_name">Calificaciones Estudiantes</span></h2>
-            <h3 style="text-align: center;"><span class="display_name">Puntaje maximo: {{ xblock.puntajemax }}</span></h3>
-            <br/>
-            <ol class="block-tree accordion" aria-labelledby="expand-collapse-outline-all-button"> 
-                <li class="outline-item section dup-year">
-                    <button class="outline-button" aria-expanded="false" aria-controls="grade-info-student-{{ location }}">
-                        <span class="fa fa-chevron-right " aria-hidden="true"></span>
-                        <span class="xblock-displayname truncate">Estudiantes</span>
-                    </button>
-                    <div class="content-info" id="grade-info-student-{{ location }}" style="display: none;">
-                        <table style="text-align: center;margin-left:auto;margin-right:auto;margin-top: 14px;margin-bottom: 14px;">
-                            <thead>
-                                <tr>
-                                    <td>Estudiante</td>
-                                    <td>Correo</td>
-                                    <td style="width: 80px;">Puntaje</td>
-                                    <td>Comentarios</td>
-                                    <td>Acciones</td>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-alumnos">
-                            {% for alumno in lista_alumnos %}
-                            <tr id={{alumno.id}}>
-                                <td hidden>{{alumno.id}}</td>
-                                <td>{{alumno.username}}</td>
-                                <td>{{alumno.correo}}</td>
-                                <td>
-                                    <input autocomplete="off" name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">
-                                </td>
-                                <td>
-                                    <input autocomplete="off" name='comentario' class="comentario" type="text" value='{{alumno.com}}'>
-                                </td>
-                                <td>
-                                    <input type="button" value="Guardar" aria-controls="estudiante" disabled />
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </li>
-                <li class="outline-item section dup-year">
-                    <button class="outline-button" aria-expanded="false" aria-controls="grade-info-team-{{ location }}">
-                        <span class="fa fa-chevron-right " aria-hidden="true"></span>
-                        <span class="xblock-displayname truncate">Equipo Docente</span>
-                    </button>
-                    <div class="content-info" id="grade-info-team-{{ location }}" style="display: none;">
-                        <table style="text-align: center;margin-left:auto;margin-right:auto;margin-top: 14px;margin-bottom: 14px;">
-                            <thead>
-                                <tr>
-                                    <td>Equipo</td>
-                                    <td>Correo</td>
-                                    <td style="width: 80px;">Puntaje</td>
-                                    <td>Comentarios</td>
-                                    <td>Acciones</td>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-equipo">
-                            {% for equipo in lista_equipo %}
-                            <tr id={{equipo.id}}>
-                                <td hidden>{{equipo.id}}</td>
-                                <td>{{equipo.username}}</td>
-                                <td>{{equipo.correo}}</td>
-                                <td>
-                                    <input autocomplete="off" name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{equipo.pun}}">
-                                </td>
-                                <td>
-                                    <input autocomplete="off" name='comentario' class="comentario" type="text" value='{{equipo.com}}'>
-                                </td>
-                                <td>
-                                    <input type="button" value="Guardar" aria-controls="equipo" disabled />
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </li> 
-            </ol>
-            <div id="ui-loading-eollistgrade-load-footer" class="ui-loading is-hidden" style="box-shadow: none;background: none;padding-top: 10px;">
-                <p>
-                <span class="spin">
-                    <span class="icon fa fa-refresh" aria-hidden="true"></span>
-                </span>
-                <span class="copy">Guardando</span>
-                </p>
-            </div>
-            <label class="is-hidden" style="cursor: default;color: royalblue;" id="eollistgrade_label" ></label>
-            <label class="is-hidden" style="cursor: default;color: red;" id="eollistgrade_wrong_label"></label>
-            <br/>
-            <div class="row">
-                <input name="sendall" class="sendall" type="button" style="width: 145px;margin-left: auto;" value="Guardar Todos" >
-                <input name="cerrar-eollistgrade" class="cerrar-eollistgrade" type="button" style="width: 145px;margin-right: auto;" value="Cerrar" >
-            </div>
+{% if is_course_staff %}  
+    <h2>{{xblock.display_name}}</h2>
+    {% if xblock.is_manual %}
+        <div class="wrap-instructor-info" style="display: block;">
+            <label style="cursor: default;">Estudiantes Calificados: <spin id="calificado_alumnos">{{calificado_alumnos}}</spin> de {{ lista_alumnos|length }}</label></br>
+            <label style="cursor: default;">Equipo Docente Calificados: <spin id="calificado_equipo">{{calificado_equipo}}</spin> de {{ lista_equipo|length }}</label></br>
+            <label style="cursor: default;">Total Calificados: <spin id="calificado_total">{{calificado_total}}</spin> de {{ total_enrolled }}</label></br>
+            <a class="button" id="grade-submissions-button"
+                href="#grade-1-eollistgrade-{{ location }}" style="margin-top: inherit;color: black;font-weight: bold;"> Calificaciones</a>
         </div>
         
-    </section>
+        <section aria-hidden="true" class="modal2 modal staff-modal" id="grade-1-eollistgrade-{{ location }}" name="grade-1-eollistgrade" style="height: auto" tabindex="-1">
+            <div class="inner-wrapper" style="color: black; overflow: auto;text-align: center;">
+                <a class='modal_close' href="javascript:void(0);" onclick="$('#lean_overlay').click();"> <i class='fa fa-times'></i> </a>
+                <h2 style="text-align: center;"><span class="display_name">Calificaciones Estudiantes</span></h2>
+                <h3 style="text-align: center;"><span class="display_name">Puntaje maximo: {{ xblock.puntajemax }}</span></h3>
+                <br/>
+                <ol class="block-tree accordion" aria-labelledby="expand-collapse-outline-all-button"> 
+                    <li class="outline-item section dup-year">
+                        <button class="outline-button" aria-expanded="false" aria-controls="grade-info-student-{{ location }}">
+                            <span class="fa fa-chevron-right " aria-hidden="true"></span>
+                            <span class="xblock-displayname truncate">Estudiantes</span>
+                        </button>
+                        <div class="content-info" id="grade-info-student-{{ location }}" style="display: none;">
+                            <table style="text-align: center;margin-left:auto;margin-right:auto;margin-top: 14px;margin-bottom: 14px;">
+                                <thead>
+                                    <tr>
+                                        <td>Estudiante</td>
+                                        <td>Correo</td>
+                                        <td style="width: 80px;">Puntaje</td>
+                                        <td>Comentarios</td>
+                                        <td>Acciones</td>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-alumnos">
+                                {% for alumno in lista_alumnos %}
+                                <tr id={{alumno.id}}>
+                                    <td hidden>{{alumno.id}}</td>
+                                    <td>{{alumno.username}}</td>
+                                    <td>{{alumno.correo}}</td>
+                                    <td>
+                                        <input autocomplete="off" name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{alumno.pun}}">
+                                    </td>
+                                    <td>
+                                        <input autocomplete="off" name='comentario' class="comentario" type="text" value='{{alumno.com}}'>
+                                    </td>
+                                    <td>
+                                        <input type="button" value="Guardar" aria-controls="estudiante" disabled />
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </li>
+                    <li class="outline-item section dup-year">
+                        <button class="outline-button" aria-expanded="false" aria-controls="grade-info-team-{{ location }}">
+                            <span class="fa fa-chevron-right " aria-hidden="true"></span>
+                            <span class="xblock-displayname truncate">Equipo Docente</span>
+                        </button>
+                        <div class="content-info" id="grade-info-team-{{ location }}" style="display: none;">
+                            <table style="text-align: center;margin-left:auto;margin-right:auto;margin-top: 14px;margin-bottom: 14px;">
+                                <thead>
+                                    <tr>
+                                        <td>Equipo</td>
+                                        <td>Correo</td>
+                                        <td style="width: 80px;">Puntaje</td>
+                                        <td>Comentarios</td>
+                                        <td>Acciones</td>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-equipo">
+                                {% for equipo in lista_equipo %}
+                                <tr id={{equipo.id}}>
+                                    <td hidden>{{equipo.id}}</td>
+                                    <td>{{equipo.username}}</td>
+                                    <td>{{equipo.correo}}</td>
+                                    <td>
+                                        <input autocomplete="off" name='puntaje' class="decimalx" type="text" style="width: 54px;" value="{{equipo.pun}}">
+                                    </td>
+                                    <td>
+                                        <input autocomplete="off" name='comentario' class="comentario" type="text" value='{{equipo.com}}'>
+                                    </td>
+                                    <td>
+                                        <input type="button" value="Guardar" aria-controls="equipo" disabled />
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </li> 
+                </ol>
+                <div id="ui-loading-eollistgrade-load-footer" class="ui-loading is-hidden" style="box-shadow: none;background: none;padding-top: 10px;">
+                    <p>
+                    <span class="spin">
+                        <span class="icon fa fa-refresh" aria-hidden="true"></span>
+                    </span>
+                    <span class="copy">Guardando</span>
+                    </p>
+                </div>
+                <label class="is-hidden" style="cursor: default;color: royalblue;" id="eollistgrade_label" ></label>
+                <label class="is-hidden" style="cursor: default;color: red;" id="eollistgrade_wrong_label"></label>
+                <br/>
+                <div class="row">
+                    <input name="sendall" class="sendall" type="button" style="width: 145px;margin-left: auto;" value="Guardar Todos" >
+                    <input name="cerrar-eollistgrade" class="cerrar-eollistgrade" type="button" style="width: 145px;margin-right: auto;" value="Cerrar" >
+                </div>
+            </div>
+            
+        </section>
     {% else %}
+        <h3><b>Puntaje Máximo: {{ xblock.puntajemax }}</b></h3>  
+        <div class="row">
+            <div class="col">
+                <ul>
+                    <li><strong>Paso 1:</strong> Exportar calificaciones.<br>
+                        <p>Descargue un CSV de calificación y utilícelo como plantilla para asignar puntajes y comentarios.</p>
+                        <p><button id='export-button' class="button import-export" style="display: block;margin-top: inherit;color: black;width: 141px;">Exportar</button></p>
+                    </li>
+                    <li><strong>Paso 2:</strong> Rellene con los puntajes y comentarios.<br>
+                        <p>Abra el CSV y solamente edite las columnas <strong>Puntaje</strong> y <strong>Comentario</strong> de cada usuario. Para los usuarios que no quiera editar, puede borrar la fila del usuario o no modificar los datos.</p>
+                    </li>
+                    <li><strong>Paso 3:</strong> Importar calificaciones.<br>
+                        <p>Suba el CSV. Los usuarios verán sus calificaciones inmediatamente después de que se complete la importación.</p>
+                        <p><em>Nota: Tamaño de archivo máximo: 100MB.</em></p>
+                        <input class="input setting-input import-export" name="eollistgrade_file" id="eollistgrade_file" type="file" accept=".csv" />
+                        <p><button id='import-button' class="button import-export" style="display: block;margin-top: inherit;color: black;width: 141px;">Importar</button></p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="ui-loading-eollistgrade-load" class="ui-loading is-hidden" style="box-shadow: none;">
+            <p>
+            <span class="spin">
+                <span class="icon fa fa-refresh" aria-hidden="true"></span>
+            </span>
+            <span class="copy">Cargando</span>
+            </p>
+        </div>
+        <label style="cursor: default;color: royalblue;display: none; text-align: center;" id="eollistgrade_label"></label>
+        <label style="cursor: default;color: red;display: none; text-align: center;" id="eollistgrade_wrong_label"></label>
+    {% endif %}
+{% else %}
     <div class="wrap-instructor-info" style="display: block;">
         <h2>Calificación</h2>        
         {% if puntaje == '' %}
@@ -121,5 +154,5 @@
             <label style="cursor: default;"> Comentarios: {{ comentario }}</label> 
         {% endif %}
         </div>
-    {% endif %}
+{% endif %}
 </div>

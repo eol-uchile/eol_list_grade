@@ -1,4 +1,5 @@
 import pkg_resources
+import io
 import six
 import six.moves.urllib.error
 import six.moves.urllib.parse
@@ -9,8 +10,10 @@ import json
 from django.template import Context, Template
 
 from xblock.core import XBlock
-from xblock.fields import Integer, Scope, String, Dict
+from xblock.fields import Integer, Scope, String, Dict, Boolean
 from xblock.fragment import Fragment
+from webob import Response
+from django.http import HttpResponse
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from lms.djangoapps.courseware.courses import get_course_with_access
@@ -19,6 +22,7 @@ from django.contrib.auth.models import User
 from submissions import api as submissions_api
 from common.djangoapps.student.models import user_by_anonymous_id
 from lms.djangoapps.courseware.models import StudentModule
+import csv
 
 log = logging.getLogger(__name__)
 # Make '_' a no-op so we can scrape strings
@@ -59,7 +63,12 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         values={'min': 0},
         scope=Scope.settings,
     )
-
+    is_manual = Boolean(
+        display_name='is_manual',
+        help='',
+        default=True,
+        scope=Scope.settings,
+    )
     has_author_view = True
     has_score = True
 
@@ -93,7 +102,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
             Return anonymous id
         """
-        from student.models import anonymous_id_for_user
+        from common.djangoapps.student.models import anonymous_id_for_user
 
         course_key = self.course_id
         return anonymous_id_for_user(User.objects.get(id=student_id), course_key)
@@ -254,7 +263,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             'puntajemax': str(self.puntajemax),
             'location': str(self.location).split('@')[-1]
         }
-        if context['is_course_staff']:
+        if context['is_course_staff'] and self.is_manual:
             settings['n_student'] = len(context['lista_alumnos'])
             settings['n_team'] = len(context['lista_equipo'])
         frag.initialize_js('EolListGradeXBlock', json_args=settings)
@@ -264,57 +273,58 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         course_key = self.course_id
         context = {'xblock': self, 'location': str(self.location).split('@')[-1]}
         if self.show_staff_grading_interface():
-            enrolled_students = User.objects.filter(
-                courseenrollment__course_id=course_key,
-                courseenrollment__is_active=1
-            ).order_by('username').values('id', 'username', 'email')
-            filter_all_sub = {}
-            user_roles = self.get_user_roles(course_key)
-            all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
-            for student_item, submission, score in all_submission:
-                if self.block_id == student_item['item_id']:
-                    filter_all_sub[student_item['student_id']] = score['points_earned']
-            
-            lista_alumnos = []
-            lista_equipo = []
-            calificado_total = 0
-            calificado_alumnos = 0
-            calificado_equipo = 0
-            states = self.get_all_student_module(course_key, self.block_id)
-            for a in enrolled_students:
-                p = ''
-                anonymous_id = self.get_anonymous_id(a['id'])
-                if anonymous_id in filter_all_sub:
-                    if filter_all_sub[anonymous_id] is not None and filter_all_sub[anonymous_id] >= 0:
-                        p = filter_all_sub[anonymous_id]
-                        calificado_total = calificado_total + 1
-                        if a['id'] in user_roles:
-                            calificado_equipo = calificado_equipo + 1
-                        else:
-                            calificado_alumnos = calificado_alumnos + 1
-                com = ''
-                if a['id'] in states:
-                    if 'comment' in states[a['id']]:
-                        state = states[a['id']]
-                        com = state['comment']
-                if a['id'] in user_roles:
-                    lista_equipo.append({'id': a['id'],
-                                        'username': a['username'],
-                                        'correo': a['email'],
-                                        'pun': p,
-                                        'com': com})
-                else:
-                    lista_alumnos.append({'id': a['id'],
-                                        'username': a['username'],
-                                        'correo': a['email'],
-                                        'pun': p,
-                                        'com': com})
-            context['lista_alumnos'] = lista_alumnos
-            context['lista_equipo'] = lista_equipo
-            context['total_enrolled'] = len(enrolled_students)
-            context['calificado_total'] = calificado_total
-            context['calificado_alumnos'] = calificado_alumnos
-            context['calificado_equipo'] = calificado_equipo
+            if self.is_manual:
+                enrolled_students = User.objects.filter(
+                    courseenrollment__course_id=course_key,
+                    courseenrollment__is_active=1
+                ).order_by('username').values('id', 'username', 'email')
+                filter_all_sub = {}
+                user_roles = self.get_user_roles(course_key)
+                all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
+                for student_item, submission, score in all_submission:
+                    if self.block_id == student_item['item_id']:
+                        filter_all_sub[student_item['student_id']] = score['points_earned']
+                
+                lista_alumnos = []
+                lista_equipo = []
+                calificado_total = 0
+                calificado_alumnos = 0
+                calificado_equipo = 0
+                states = self.get_all_student_module(course_key, self.block_id)
+                for a in enrolled_students:
+                    p = ''
+                    anonymous_id = self.get_anonymous_id(a['id'])
+                    if anonymous_id in filter_all_sub:
+                        if filter_all_sub[anonymous_id] is not None and filter_all_sub[anonymous_id] >= 0:
+                            p = filter_all_sub[anonymous_id]
+                            calificado_total = calificado_total + 1
+                            if a['id'] in user_roles:
+                                calificado_equipo = calificado_equipo + 1
+                            else:
+                                calificado_alumnos = calificado_alumnos + 1
+                    com = ''
+                    if a['id'] in states:
+                        if 'comment' in states[a['id']]:
+                            state = states[a['id']]
+                            com = state['comment']
+                    if a['id'] in user_roles:
+                        lista_equipo.append({'id': a['id'],
+                                            'username': a['username'],
+                                            'correo': a['email'],
+                                            'pun': p,
+                                            'com': com})
+                    else:
+                        lista_alumnos.append({'id': a['id'],
+                                            'username': a['username'],
+                                            'correo': a['email'],
+                                            'pun': p,
+                                            'com': com})
+                context['lista_alumnos'] = lista_alumnos
+                context['lista_equipo'] = lista_equipo
+                context['total_enrolled'] = len(enrolled_students)
+                context['calificado_total'] = calificado_total
+                context['calificado_alumnos'] = calificado_alumnos
+                context['calificado_equipo'] = calificado_equipo
             context['category'] = type(self).__name__
             context['is_course_staff'] = True
         else:
@@ -350,7 +360,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             Verify if all students data is valid
         """
         score = True
-        for fila in data.get('data'):
+        for fila in data:
             if not str(fila[1]).lstrip('+').isdigit() or int(fila[1]
                                                              ) < 0 or int(fila[1]) > self.puntajemax:
                 score = False
@@ -359,6 +369,23 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
 
     def max_score(self):
         return self.puntajemax
+
+    def file_to_csvreader(self, csvfile):
+        """
+            Convert file in csv object
+        """
+        package_file = csvfile
+        decoded_file = package_file.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        csv_reader = csv.reader(io_string, delimiter=';')
+        header = next(csv_reader)
+        return csv_reader
+
+    @staticmethod
+    def json_response(data):
+        return Response(
+            json.dumps(data), content_type="application/json", charset="utf8"
+        )
 
     @XBlock.json_handler
     def savestudentanswers(self, data, suffix=''):
@@ -376,7 +403,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             student_module.state = json.dumps(state)
             student_module.save()
             
-            from student.models import anonymous_id_for_user
+            from common.djangoapps.student.models import anonymous_id_for_user
             
             course_key = self.course_id
             anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(data.get('id'))), course_key)
@@ -411,9 +438,10 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         """
             Save the score and comment of all students
         """
-        valida = self.validar_datos_all(data)
+        data_list = data.get('data')
+        valida = self.validar_datos_all(data_list)
         if self.show_staff_grading_interface() and valida:
-            for fila in data.get('data'):
+            for fila in data_list:
                 student_module = self.get_or_create_student_module(fila[0])
                 state = json.loads(student_module.state)
                 score = int(fila[1])
@@ -422,7 +450,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 student_module.state = json.dumps(state)
                 student_module.save()
 
-                from student.models import anonymous_id_for_user
+                from common.djangoapps.student.models import anonymous_id_for_user
                 
                 course_key = self.course_id
                 anonymous_user_id = anonymous_id_for_user(User.objects.get(id=int(fila[0])), course_key)
@@ -445,10 +473,124 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
             return {
                 'result': 'success',
                 'id': '00',
-                'n_student': len(
-                    data.get('data'))}
+                'n_student': len(data_list)}
 
         return {'result': 'error'}
+
+    @XBlock.handler
+    def import_csv(self, request, suffix=''):
+        """
+            Save score and comment from csv file
+        """
+        if request.method != "POST":
+            log.error('EolListGrade - Import Error, wrong request method: {}'.format(request.method))
+            return HttpResponse(status=400)
+        response = {"result": "success", "errors": ''}
+        if not self.show_staff_grading_interface():
+            log.error('EolListGrade - Import Error, user dont have permission user: {}'.format(self.scope_ids.user_id))
+            response['result'] = 'error'
+            response['code_error'] = 1
+            response['errors'] = 'User dont have permission'
+            return self.json_response(response)
+        if 'file' not in request.params or not hasattr(request.params["file"], "file"):
+            log.error('EolListGrade - Import Error, request dont have csv file: {}'.format(request.params))
+            # File not uploaded
+            response['result'] = 'error'
+            response['code_error'] = 2
+            response['errors'] = 'File not uploaded'
+            return self.json_response(response)
+        csv_reader = self.file_to_csvreader(request.params['file'].file)
+        csv_data = [x for x in csv_reader]
+        wrong_data = []
+        for row in csv_data:
+            try:
+                user = User.objects.get(
+                    username=row[0], 
+                    courseenrollment__course_id=self.course_id,
+                    courseenrollment__is_active=1)
+                student_module = self.get_or_create_student_module(user.id)
+                state = json.loads(student_module.state)
+                if row[2] == '':
+                    continue
+                score = int(row[2])
+                state['comment'] = row[3]
+                state['student_score'] = score
+                student_module.state = json.dumps(state)
+                student_module.save()
+
+                from common.djangoapps.student.models import anonymous_id_for_user
+                
+                course_key = self.course_id
+                anonymous_user_id = anonymous_id_for_user(user, course_key)
+                student_item = {
+                    'student_id': anonymous_user_id,
+                    'course_id': self.block_course_id,
+                    'item_id': self.block_id,
+                    'item_type': XBLOCK_TYPE
+                }
+                submission = self.get_submission(anonymous_user_id)
+                if submission:
+                    submissions_api.set_score(
+                        submission['uuid'], score, self.puntajemax)
+                else:
+                    submission = submissions_api.create_submission(
+                        student_item, 'any answer')
+                    submissions_api.set_score(
+                        submission['uuid'], score, self.puntajemax)
+            except Exception as e:
+                log.error('EolListGrade - Import Error: {}'.format(str(e)))
+                wrong_data.append(row)
+        response['wrong_data'] = wrong_data
+        response['total_scored'] = len(csv_data) - len(wrong_data)
+        return self.json_response(response)
+
+    @XBlock.handler
+    def export_csv(self, request, suffix=''):
+        """
+            Create CSV file, with all user enrolled in the course and their scored and comments
+        """
+        if request.method != "GET":
+            log.error('EolListGrade - Export Error, wrong request method: {}'.format(request.method))
+            return HttpResponse(status=400)
+        course_key = self.course_id
+        if not self.show_staff_grading_interface():
+            log.error('EolListGrade - Export Error, user dont have permission user: {}'.format(self.scope_ids.user_id))
+            return HttpResponse(status=401)
+        enrolled_students = User.objects.filter(
+            courseenrollment__course_id=course_key,
+            courseenrollment__is_active=1
+        ).order_by('username').values('id', 'username', 'email')
+        filter_all_sub = {}
+        all_submission = list(submissions_api.get_all_course_submission_information(self.course_id, XBLOCK_TYPE))
+        for student_item, submission, score in all_submission:
+            if self.block_id == student_item['item_id']:
+                filter_all_sub[student_item['student_id']] = score['points_earned']
+        
+        lista_alumnos = [['Estudiante', 'Email', 'Puntaje', 'Comentario']]
+        states = self.get_all_student_module(course_key, self.block_id)
+        for a in enrolled_students:
+            p = ''
+            anonymous_id = self.get_anonymous_id(a['id'])
+            if anonymous_id in filter_all_sub:
+                if filter_all_sub[anonymous_id] is not None and filter_all_sub[anonymous_id] >= 0:
+                    p = filter_all_sub[anonymous_id]
+            com = ''
+            if a['id'] in states:
+                if 'comment' in states[a['id']]:
+                    state = states[a['id']]
+                    com = state['comment']
+            
+            lista_alumnos.append([a['username'], a['email'], p, com])
+        filename = "notas_manuales_{}_{}".format(self.block_course_id,str(self.location).split('@')[-1])
+        response = Response(content_type='text/csv')
+        response.content_disposition = 'attachment; filename="{}.csv"'.format(filename)
+        writer = csv.writer(
+            response,
+            delimiter=';',
+            dialect='excel')
+        writer.writerows(lista_alumnos)
+
+        return response
 
     @XBlock.json_handler
     def studio_submit(self, data, suffix=''):
@@ -459,6 +601,7 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 '+').isdigit() and int(data.get('puntajemax')) >= 0:
             self.display_name = data.get('display_name') or ""
             self.puntajemax = int(data.get('puntajemax')) or 100
+            self.is_manual = data.get('is_manual')
             return {'result': 'success'}
         return {'result': 'error'}
 

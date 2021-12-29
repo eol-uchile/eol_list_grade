@@ -13,6 +13,8 @@ function EolListGradeXBlock(runtime, element, settings) {
     var $element = $(element);
     var handlerUrlSaveStudentAnswers = runtime.handlerUrl(element, 'savestudentanswers');
     var handlerUrlSaveStudentAnswersAll = runtime.handlerUrl(element, 'savestudentanswersall');
+    var handlerUrlImport = runtime.handlerUrl(element, 'import_csv');
+    var handlerUrlExport = runtime.handlerUrl(element, 'export_csv');
 
     function showAnswers(result){
         if (result.result == 'success'){
@@ -142,7 +144,72 @@ function EolListGradeXBlock(runtime, element, settings) {
             $(element).find('#eollistgrade_wrong_label').show();
         }
     });
-
+    $(element).find('button[id=import-button]').live('click', function() {
+        $(element).find('#ui-loading-eollistgrade-load').show();
+        $(element).find('#eollistgrade_label')[0].textContent = '';
+        $(element).find('#eollistgrade_label')[0].style.display = "none";
+        $(element).find('#eollistgrade_wrong_label')[0].textContent = "";
+        $(element).find('#eollistgrade_wrong_label')[0].style.display = "none";
+        var form_data = new FormData();
+        var file_data = $(element).find('#eollistgrade_file').prop('files')[0];
+        form_data.append('file', file_data);
+        $.ajax({
+            url: handlerUrlImport,
+            dataType: 'json',
+            cache: false,
+            contentType: false,
+            processData: false,
+            data: form_data,
+            type: "POST",
+            xhrFields: {
+                withCredentials: true
+                },
+            success: function(response) {
+                $(element).find('#ui-loading-eollistgrade-load').hide();
+                if (response.result == 'success') {
+                    $(element).find('#eollistgrade_label')[0].textContent = `${response.total_scored} usuarios fueron calificados.`;
+                    $(element).find('#eollistgrade_label')[0].style.display = "block";
+                    $(element).find('#eollistgrade_wrong_label')[0].textContent = "";
+                    $(element).find('#eollistgrade_wrong_label')[0].style.display = "none";
+                    if (response.wrong_data.length > 0){
+                        let label = $(element).find('#eollistgrade_wrong_label')[0];
+                        label.innerHTML = 'Estos datos estan incorrectos: <br>';
+                        response.wrong_data.forEach(function(entry) {
+                            label.innerHTML += `${entry.toString()}<br>`
+                        });
+                        $(element).find('#eollistgrade_wrong_label')[0].style.display = "block";
+                    }
+                }
+                else{
+                    $element.find('#eollistgrade_label')[0].textContent = "";
+                    $element.find('#eollistgrade_label')[0].style.display = "none";
+                    if(response.code_error == 1){
+                        $element.find('#eollistgrade_wrong_label')[0].textContent = 'Usuario no tiene permisos para realizar esta acción.';
+                    }
+                    else if(response.code_error == 2){
+                        $element.find('#eollistgrade_wrong_label')[0].textContent = 'No se ha seleccionado un archivo.';
+                    }
+                    else{
+                        $element.find('#eollistgrade_wrong_label')[0].textContent = 'Error al importar el archivo, actualice la página e intente nuevamente, si el problema persiste contáctese a mesa de ayuda.';
+                    }
+                    $element.find('#eollistgrade_wrong_label')[0].style.display = "block";
+                }
+            },
+            error: function(response){
+                $(element).find('#eollistgrade_label')[0].textContent = "";
+                $(element).find('#eollistgrade_label')[0].style.display = "none";
+                $element.find('#eollistgrade_wrong_label')[0].textContent = 'Error al importar el archivo, actualice la página e intente nuevamente, si el problema persiste contáctese a mesa de ayuda.';
+                $(element).find('#eollistgrade_wrong_label')[0].style.display = "block";
+            }
+        });
+    });
+    $(element).find('button[id=export-button]').live('click', function() {
+        $(element).find('#eollistgrade_label')[0].textContent = `La descarga comenzará en breve.`;
+        $(element).find('#eollistgrade_label')[0].style.display = "block";
+        $(element).find('#eollistgrade_wrong_label')[0].textContent = "";
+        $(element).find('#eollistgrade_wrong_label')[0].style.display = "none";
+        location.href = handlerUrlExport;
+    });
    $('.decimalx').keyup(function(){
         var val = $(this).val()
         if(isNaN(val) || val.includes(".")){

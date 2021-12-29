@@ -13,12 +13,14 @@ function EolListGradeXBlock(runtime, element) {
     $(element).find('.save-button-eollistgrade').bind('click', function(eventObject) {
         eventObject.preventDefault();
         var handlerUrl = runtime.handlerUrl(element, 'studio_submit');
-
+        var is_manual = $(element).find('#is_manual').val();
+        is_manual = is_manual == '1';
         var data = {
             'display_name': $(element).find('input[name=display_name]').val(),
             'puntajemax': $(element).find('input[name=puntajemax]').val(),
+            'is_manual': is_manual,
         };
-        
+
         if ($.isFunction(runtime.notify)) {
             runtime.notify('save', {state: 'start'});
         }
