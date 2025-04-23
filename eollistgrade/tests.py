@@ -111,6 +111,19 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.assertEqual(self.xblock.puntajemax, 200)
         self.assertFalse(self.xblock.is_manual)
 
+    def test_edit_block_studio_wrong_puntajemax(self):
+        """
+            Verify submit studio edits is working when puntajemax is wrong
+        """
+        request = TestRequest()
+        request.method = 'POST'
+        self.xblock.xmodule_runtime.user_is_staff = True
+        data = json.dumps({'display_name': 'testname', "puntajemax": '-200', 'is_manual': False})
+        request.body = data.encode()
+        response = self.xblock.studio_submit(request)
+        data_response = response.json
+        self.assertEqual(data_response['result'], 'error')
+
     def test_student_view_staff(self):
         """
             Verify context in student_view staff user
@@ -724,3 +737,60 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         data_staff = '{};{};{};{}\r\n'.format(self.staff_user.username, self.staff_user.email,'','')
         expect = ['',"Estudiante;Email;Puntaje;Comentario\r\n", data_staff, data_student]
         self.assertEqual(data, expect)
+
+    def test_studio_view_render(self):
+        """
+            Check if studio view (Edit) is rendering
+        """
+        studio_view = self.xblock.studio_view()
+        studio_view_html = studio_view.content
+        self.assertIn('id="settings-tab"', studio_view_html)
+
+    def test_author_view_render(self):
+        """
+            Check if author view is rendering
+        """
+        author_view = self.xblock.author_view()
+        author_view_html = author_view.content
+        self.assertIn('class="eollistgrade_block"', author_view_html)
+    
+    def test_student_view_render(self):
+        """
+            Check if student view is rendering
+        """
+        self.xblock.is_manual = True
+        self.xblock.xmodule_runtime.user_is_staff = True
+        self.xblock.scope_ids.user_id = self.staff_user.id
+        student_view = self.xblock.student_view()
+        student_view_html = student_view.content
+        self.assertIn('class="eollistgrade_block"', student_view_html)
+
+    def test_workbench_scenarios(self):
+        """
+            Checks workbench scenarios title and basic scenario
+        """
+        result_title = 'EolListGradeXBlock'
+        basic_scenario = "<eollistgrade/>"
+        test_result = self.xblock.workbench_scenarios()
+        self.assertEqual(result_title, test_result[0][0])
+        self.assertIn(basic_scenario, test_result[0][1])
+
+    def test_get_student_item_dict_student_id_none(self):
+        """
+            Checks get_student_item_dict fuction when student_id is None
+        """
+        response = self.xblock.get_student_item_dict(None)
+        self.assertEqual(
+            response['student_id']._mock_name,
+            'anonymous_student_id'
+        )
+    
+    def test_get_com(self):
+        """
+            Checks get_com fuction when student_id didn't exist
+        """
+        response = self.xblock.get_com('11111', None, None)
+        self.assertEqual(
+            response,
+            {}
+        )
