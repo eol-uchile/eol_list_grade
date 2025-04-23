@@ -1,19 +1,23 @@
 """
 Module To Test EolListGrade XBlock
 """
-
-from mock import Mock, patch
-from common.djangoapps.util.testing import UrlResetMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
-from common.djangoapps.student.roles import CourseStaffRole
-from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
-from xblock.field_data import DictFieldData
-from .eollistgrade import EolListGradeXBlock
-
+# Python Standard Libraries
 import json
 import logging
-import mock
+
+# Installed packages (via pip)
+from mock import Mock, patch
+
+# Edx dependencies
+from common.djangoapps.student.roles import CourseStaffRole
+from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
+from common.djangoapps.util.testing import UrlResetMixin
+from xblock.field_data import DictFieldData
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
+
+# Internal project dependencies
+from .eollistgrade import EolListGradeXBlock
 
 log = logging.getLogger(__name__)
 
@@ -565,10 +569,10 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
             course_id=self.course.id,
             state='{}')
         module.save()
-        mock_file_object = mock.Mock()
+        mock_file_object = Mock()
         mock_file_object.configure_mock(name="file_name")
         fields = {
-            "file": mock.Mock(file=mock_file_object),
+            "file": Mock(file=mock_file_object),
         }
         csv_reader.return_value = [
             [self.student.username, self.student.email, '1', 'this is a comment']
@@ -576,7 +580,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.is_manual = False
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.import_csv(mock.Mock(method="POST", params=fields))
+        response = self.xblock.import_csv(Mock(method="POST", params=fields))
         data = response.json
         self.assertEqual(data['result'], 'success')
         self.assertEqual(data['errors'], '')
@@ -597,7 +601,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         fields = {
             "file": '',
         }
-        response = self.xblock.import_csv(mock.Mock(method="GET", params=fields))
+        response = self.xblock.import_csv(Mock(method="GET", params=fields))
         self.assertEqual(response.status_code, 400)
 
     def test_import_csv_no_file(self):
@@ -606,13 +610,13 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.import_csv(mock.Mock(method="POST", params={}))
+        response = self.xblock.import_csv(Mock(method="POST", params={}))
         data = response.json
         self.assertEqual(data['result'], 'error')
         self.assertEqual(data['code_error'], 2)
         self.assertEqual(data['errors'], 'File not uploaded')
 
-        response = self.xblock.import_csv(mock.Mock(method="POST", params={'file':123}))
+        response = self.xblock.import_csv(Mock(method="POST", params={'file':123}))
         data = response.json
         self.assertEqual(data['result'], 'error')
         self.assertEqual(data['code_error'], 2)
@@ -624,7 +628,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         self.xblock.xmodule_runtime.user_is_staff = False
         self.xblock.scope_ids.user_id = self.student.id
-        response = self.xblock.import_csv(mock.Mock(method="POST", params={}))
+        response = self.xblock.import_csv(Mock(method="POST", params={}))
         data = response.json
         self.assertEqual(data['result'], 'error')
         self.assertEqual(data['code_error'], 1)
@@ -635,10 +639,10 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
             test import csv when csv have wrong data
         """
-        mock_file_object = mock.Mock()
+        mock_file_object = Mock()
         mock_file_object.configure_mock(name="file_name")
         fields = {
-            "file": mock.Mock(file=mock_file_object),
+            "file": Mock(file=mock_file_object),
         }
         csv_reader.return_value = [
             ['asdasdsad', self.student.email, '1', 'this is a comment']
@@ -646,7 +650,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.is_manual = False
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.import_csv(mock.Mock(method="POST", params=fields))
+        response = self.xblock.import_csv(Mock(method="POST", params=fields))
         data = response.json
         self.assertEqual(data['result'], 'success')
         self.assertEqual(data['errors'], '')
@@ -658,10 +662,10 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
             test import csv when csv have wrong data user isn't enrolled
         """
-        mock_file_object = mock.Mock()
+        mock_file_object = Mock()
         mock_file_object.configure_mock(name="file_name")
         fields = {
-            "file": mock.Mock(file=mock_file_object),
+            "file": Mock(file=mock_file_object),
         }
         csv_reader.return_value = [
             [self.student_2.username, self.student_2.email, '1', 'this is a comment']
@@ -669,7 +673,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         self.xblock.is_manual = False
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.import_csv(mock.Mock(method="POST", params=fields))
+        response = self.xblock.import_csv(Mock(method="POST", params=fields))
         data = response.json
         self.assertEqual(data['result'], 'success')
         self.assertEqual(data['errors'], '')
@@ -682,7 +686,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.export_csv(mock.Mock(method="POST"))
+        response = self.xblock.export_csv(Mock(method="POST"))
         self.assertEqual(response.status_code, 400)
 
     def test_export_csv_denied_user(self):
@@ -691,7 +695,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         self.xblock.xmodule_runtime.user_is_staff = False
         self.xblock.scope_ids.user_id = self.student.id
-        response = self.xblock.export_csv(mock.Mock(method="GET", params={}))
+        response = self.xblock.export_csv(Mock(method="GET", params={}))
         self.assertEqual(response.status_code, 401)
 
     def test_export_csv(self):
@@ -700,7 +704,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         """
         self.xblock.xmodule_runtime.user_is_staff = True
         self.xblock.scope_ids.user_id = self.staff_user.id
-        response = self.xblock.export_csv(mock.Mock(method="GET"))
+        response = self.xblock.export_csv(Mock(method="GET"))
         data = [x.decode() for x in response.app_iter]
         data_student = '{};{};{};{}\r\n'.format(self.student.username, self.student.email,'','')
         data_staff = '{};{};{};{}\r\n'.format(self.staff_user.username, self.staff_user.email,'','')
@@ -731,7 +735,7 @@ class EolListGradeXBlockTestCase(UrlResetMixin, ModuleStoreTestCase):
         module.save()
 
         aux_response = self.xblock.savestudentanswers(request)
-        response = self.xblock.export_csv(mock.Mock(method="GET"))
+        response = self.xblock.export_csv(Mock(method="GET"))
         data = [x.decode() for x in response.app_iter]
         data_student = '{};{};{};{}\r\n'.format(self.student.username, self.student.email,'11','comentario121')
         data_staff = '{};{};{};{}\r\n'.format(self.staff_user.username, self.staff_user.email,'','')

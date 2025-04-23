@@ -1,32 +1,29 @@
-import pkg_resources
+# Python Standard Libraries
 import io
-import six
-import six.moves.urllib.error
-import six.moves.urllib.parse
-import six.moves.urllib.request
-import logging
 import json
+import logging
 
-from django.template import Context, Template
-
-from xblock.core import XBlock
-from xblock.fields import Integer, Scope, String, Dict, Boolean
-from xblock.fragment import Fragment
-from webob import Response
-from django.http import HttpResponse
-from xblockutils.studio_editable import StudioEditableXBlockMixin
-from opaque_keys.edx.keys import CourseKey, UsageKey
-from lms.djangoapps.courseware.courses import get_course_with_access
-from common.djangoapps.student.models import CourseAccessRole
+# Installed packages (via pip)
 from django.contrib.auth.models import User
-from submissions import api as submissions_api
-from common.djangoapps.student.models import user_by_anonymous_id
-from lms.djangoapps.courseware.models import StudentModule
+from django.http import HttpResponse
+from django.template import Context, Template
+from webob import Response
 import csv
+import pkg_resources
+import six
+
+# Edx dependencies
+from common.djangoapps.student.models import CourseAccessRole
+from lms.djangoapps.courseware.models import StudentModule
+from submissions import api as submissions_api
+from xblock.core import XBlock
+from xblock.fields import Integer, Scope, String, Boolean
+from xblock.fragment import Fragment
+from xblockutils.studio_editable import StudioEditableXBlockMixin
+
 
 log = logging.getLogger(__name__)
 # Make '_' a no-op so we can scrape strings
-
 
 def _(text): return text
 
@@ -359,9 +356,6 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
                 score = False
                 break
         return score
-
-    def max_score(self):
-        return self.puntajemax
 
     def file_to_csvreader(self, csvfile):
         """
