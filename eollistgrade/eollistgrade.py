@@ -107,13 +107,6 @@ class EolListGradeXBlock(StudioEditableXBlockMixin, XBlock):
         course_key = self.course_id
         return anonymous_id_for_user(User.objects.get(id=student_id), course_key)
 
-    def is_instructor(self):
-        # pylint: disable=no-member
-        """
-        Check if user role is instructor.
-        """
-        return self.xmodule_runtime.get_user_role() == 'instructor'
-
     def show_staff_grading_interface(self):
         """
         Return if current user is staff and not in studio.
